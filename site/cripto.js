@@ -65,13 +65,19 @@
     });
   }
 
+  // sem senha guardada (ou senha trocada): volta para a entrada (index.html), que pede a senha
+  function irParaEntrada() {
+    try { localStorage.removeItem('ufit-chave'); } catch (e) {}
+    location.href = './';
+  }
+
   function iniciar() {
-    if (!k) { aviso('Link sem a chave de acesso. Abra o link completo (com #k=…) que foi passado para esta tela.'); return; }
+    if (!k) { irParaEntrada(); return; }
     if (!window.crypto || !crypto.subtle) { aviso('Este navegador não abre os dados protegidos. Use outro navegador ou atualize a TV.'); return; }
     ler(ARQUIVO).then(function (d) { window[VAR] = d; rodarApp(); })
       .catch(function (e) {
-        aviso(/OperationError/.test(e && e.name) ? 'Chave de acesso errada. Abra de novo o link completo desta tela.'
-                                                  : 'Carregando os dados…');
+        if (/OperationError/.test(e && e.name)) { irParaEntrada(); return; }
+        aviso('Carregando os dados…');
         setTimeout(iniciar, 30000);
       });
   }

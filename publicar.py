@@ -23,7 +23,7 @@ LISTAS = ['operadores.csv', 'tabulacoes.csv', 'ajustes_vendas.csv', 'vendas_ganh
 ESTADO = ['vendas_mes.json', 'convenios.json', 'govoice_token.json']
 PAGINAS_TV = {'tv1.html': ('dados.enc', 'DADOS'), 'tv2.html': ('dados.enc', 'DADOS'),
               'tv-unidades.html': ('dados.enc', 'DADOS'), 'convenios.html': ('conv.enc', 'CONV')}
-COPIAR = ['index.html', 'tv.css', 'nosleep.min.js', 'logo_ufit.png']
+COPIAR = ['tv.css', 'nosleep.min.js', 'logo_ufit.png']
 
 
 def chaves():
@@ -61,7 +61,7 @@ def trocar(txt, de, para, nome):
 def montar_site(k):
     site, orig = os.path.join(AQUI, 'site'), os.path.join(ORIGEM, 'site')
     for n in os.listdir(site):
-        if n != 'cripto.js':
+        if n not in ('cripto.js', 'index.html'):  # estes dois são só da versão online
             os.remove(os.path.join(site, n))
     for n in COPIAR:
         shutil.copy(os.path.join(orig, n), site)

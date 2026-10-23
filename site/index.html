@@ -1,7 +1,126 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TVs Call Center</title>
-<style>body{margin:0;min-height:100vh;background:#0b0a09;color:#f0efec;font:600 22px 'Segoe UI',Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:16px;box-sizing:border-box}
-a{display:block;background:#EEAE0E;color:#100F0D;text-decoration:none;font-weight:800;padding:18px 34px;border-radius:12px;text-align:center}img{height:60px}</style></head>
-<body><img src="logo_ufit.png" alt="UFit"><a id="a1" href="tv1.html">TV 1 · Call center ao vivo</a><a id="a2" href="tv2.html">TV 2 · Ranking de vendas</a><a id="a3" href="tv-unidades.html">TV nova · Unidades e planos (teste)</a><a id="a4" href="convenios.html">Painel de convênios</a>
+<title>TVs UFit</title>
+<!-- Entrada das TVs: senha (1ª vez) → menu. A senha vira a chave que abre os dados (PBKDF2, igual ferramentas/cripto.js)
+     e fica guardada só neste navegador. Depois, abre sozinha a última tela usada em 10 s; qualquer tecla cancela. -->
+<style>
+:root { --fundo: #0b0a09; --texto: #f0efec; --texto-2: #a8a6a0; --amarelo: #EEAE0E; --caixa: #1b1a18; --erro: #ff6b5e; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: var(--fundo); color: var(--texto); font: 600 22px 'Segoe UI', Arial, sans-serif;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 16px; }
+img { height: 64px; }
+h1 { margin: 0; font-size: 30px; }
+p { margin: 0; color: var(--texto-2); text-align: center; max-width: 640px; }
+.caixa { display: flex; flex-direction: column; gap: 14px; width: min(560px, 100%); }
+input { font: 700 30px 'Segoe UI', Arial, sans-serif; padding: 16px; border-radius: 12px; border: 3px solid #44423e; background: var(--caixa);
+  color: var(--texto); text-align: center; letter-spacing: 2px; width: 100%; }
+button, a.tela { font: 800 26px 'Segoe UI', Arial, sans-serif; padding: 20px 28px; border-radius: 14px; border: 4px solid transparent;
+  background: var(--amarelo); color: #100F0D; text-decoration: none; text-align: center; cursor: pointer; display: block; }
+a.tela { background: var(--caixa); color: var(--texto); border-color: #44423e; }
+a.tela.ultima { border-color: var(--amarelo); }
+button:focus, a.tela:focus, input:focus { outline: none; border-color: #fff; box-shadow: 0 0 0 4px var(--amarelo); }
+.menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; width: min(900px, 100%); }
+#erro { color: var(--erro); min-height: 1.2em; }
+#contagem { color: var(--amarelo); min-height: 1.2em; }
+.sair { background: none; color: var(--texto-2); font-size: 18px; padding: 8px; border: 2px solid transparent; }
+[hidden] { display: none !important; }
+</style></head>
+<body>
+<img src="logo_ufit.png" alt="UFit">
+
+<form id="entrar" class="caixa" hidden>
+  <h1 style="text-align:center">Senha de acesso</h1>
+  <p>Digite uma vez nesta TV. Tanto faz maiúscula, minúscula ou tracinho.</p>
+  <input id="senha" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="xxxx-xxxx-xxxx-xxxx">
+  <button id="btn" type="submit">Entrar</button>
+  <p id="erro"></p>
+</form>
+
+<div id="telas" hidden>
+  <div class="menu">
+    <a class="tela" href="tv1.html">TV 1 · Call center ao vivo</a>
+    <a class="tela" href="tv2.html">TV 2 · Ranking de vendas</a>
+    <a class="tela" href="tv-unidades.html">TV das unidades e planos</a>
+    <a class="tela" href="balcao.html">Balcão</a>
+    <a class="tela" href="convenios.html">Painel de convênios</a>
+  </div>
+  <p id="contagem" style="margin-top:20px"></p>
+  <p style="margin-top:8px"><button class="sair" id="sair" type="button">Esquecer a senha nesta TV</button></p>
+</div>
+
+<script>
+var SAL = 'ufit-tvs', VOLTAS = 300000;
+function guardado(n, v) { try { if (v === undefined) return localStorage.getItem(n); if (v === null) localStorage.removeItem(n); else localStorage.setItem(n, v); } catch (e) { return null; } }
+function b64url(buf) { var s = '', a = new Uint8Array(buf); for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+
+function chaveDaSenha(senha) {
+  var limpa = senha.toLowerCase().replace(/[^a-z0-9]/g, ''), enc = new TextEncoder();
+  return crypto.subtle.importKey('raw', enc.encode(limpa), 'PBKDF2', false, ['deriveBits'])
+    .then(function (k) { return crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(SAL), iterations: VOLTAS, hash: 'SHA-256' }, k, 256); })
+    .then(b64url);
+}
+// confere a chave abrindo o arquivo do Balcão (pequeno e sempre publicado)
+function conferir(chave) {
+  var b = atob(chave.replace(/-/g, '+').replace(/_/g, '/') + '='), raw = new Uint8Array(b.length);
+  for (var i = 0; i < b.length; i++) raw[i] = b.charCodeAt(i);
+  // "%62alcao.enc" = mesmo arquivo, outro endereço no cache do GitHub (que guarda 10 min e ignora "?t=")
+  var v = 'balcao.enc'.replace(/./g, function (ch) { return Math.random() < 0.5 ? '%' + ch.charCodeAt(0).toString(16).toUpperCase() : ch; });
+  return Promise.all([fetch(v, { cache: 'no-store' }).then(function (r) { return r.arrayBuffer(); }),
+                      crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt'])])
+    .then(function (x) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(x[0], 0, 12) }, x[1], new Uint8Array(x[0], 12)); });
+}
+
+function mostrarMenu() {
+  document.getElementById('entrar').hidden = true;
+  document.getElementById('telas').hidden = false;
+  var links = document.querySelectorAll('a.tela'), ultima = guardado('ufit-tela'), alvo = links[0];
+  links.forEach(function (a) {
+    if (a.getAttribute('href') === ultima) { a.classList.add('ultima'); alvo = a; }
+    a.addEventListener('click', function () { guardado('ufit-tela', a.getAttribute('href')); });
+  });
+  alvo.focus();
+  if (!ultima || /menu/.test(location.hash)) return;
+  var s = 10, c = document.getElementById('contagem');
+  function tique() { c.textContent = 'Abrindo "' + alvo.textContent + '" em ' + s + ' s · aperte qualquer botão para escolher outra'; }
+  tique();
+  var t = setInterval(function () { if (--s <= 0) { clearInterval(t); location.href = ultima; } else tique(); }, 1000);
+  function parar() { clearInterval(t); c.textContent = ''; ['keydown', 'click', 'touchstart'].forEach(function (e) { document.removeEventListener(e, parar); }); }
+  ['keydown', 'click', 'touchstart'].forEach(function (e) { document.addEventListener(e, parar); });
+}
+
+function mostrarSenha(msg) {
+  document.getElementById('telas').hidden = true;
+  document.getElementById('entrar').hidden = false;
+  document.getElementById('erro').textContent = msg || '';
+  document.getElementById('senha').focus();
+}
+
+document.getElementById('entrar').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var senha = document.getElementById('senha').value, btn = document.getElementById('btn');
+  if (senha.replace(/[^a-z0-9]/gi, '').length < 8) { mostrarSenha('Digite a senha completa.'); return; }
+  btn.disabled = true; btn.textContent = 'Conferindo…';
+  chaveDaSenha(senha).then(function (chave) {
+    return conferir(chave).then(function () { guardado('ufit-chave', chave); mostrarMenu(); });
+  }).catch(function () { mostrarSenha('Senha errada. Confira e tente de novo.'); })
+    .then(function () { btn.disabled = false; btn.textContent = 'Entrar'; });
+});
+
+document.getElementById('sair').addEventListener('click', function () {
+  guardado('ufit-chave', null); guardado('ufit-tela', null); document.getElementById('senha').value = ''; mostrarSenha();
+});
+
+// link com #k=… ainda funciona: guarda a chave e segue
+var m = location.hash.match(/k=([A-Za-z0-9_-]{43})/);
+if (m) guardado('ufit-chave', m[1]);
+
+if (!window.crypto || !crypto.subtle) {
+  document.body.innerHTML = '<p style="font-size:30px">Este navegador não abre os dados protegidos. Use outro navegador ou atualize a TV.</p>';
+} else if (guardado('ufit-chave')) {
+  conferir(guardado('ufit-chave')).then(mostrarMenu, function () { guardado('ufit-chave', null); mostrarSenha('A senha mudou. Digite a senha nova.'); });
+} else {
+  mostrarSenha();
+}
+</script>
 </body></html>

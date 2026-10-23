@@ -5,14 +5,17 @@ a cada 5 minutos (das 6h à meia-noite; de madrugada, a cada 30 min) e publica n
 
 **Projeto público, dados fechados.** Tudo que é dado (vendas, clientes, operadores, vouchers, links de venda,
 convênios) é publicado **criptografado** (`*.enc`). Quem abrir sem a chave vê só letras sem sentido.
-A chave vai no link de cada tela, depois do `#k=`, e nunca sai do navegador.
+A chave sai de uma senha digitada uma vez em cada TV, e nunca sai do navegador.
 O que fica aberto aqui é só o código.
 
-## Links das telas
-`https://ufitanalista.github.io/ufit-tvs/<página>#k=<CHAVE>`, com a página `tv1.html`, `tv2.html`, `tv-unidades.html`,
-`convenios.html` ou `balcao.html`. A chave não fica escrita neste projeto: o usuário a guarda (ela também está em
-`C:\Users\comercial2\.claude\ufit-tvs-chaves.json`, campo `tv`). Depois de abrir uma vez com a chave, o navegador
-lembra dela e os links entre as páginas funcionam sem o `#k=`.
+## Como abrir numa TV
+1. Endereço: **`ufitanalista.github.io/tv`**
+2. 1ª vez: digitar a **senha de acesso** (16 letras/números; maiúscula, minúscula e tracinho tanto faz) → Entrar.
+   A senha não fica escrita neste projeto: o usuário a guarda (também está em
+   `C:\Users\comercial2\.claude\ufit-tvs-chaves.json`, campo `senha_tv`).
+3. Menu: TV 1, TV 2, TV das unidades, Balcão, Convênios. Das próximas vezes abre sozinho a última tela em 10 s
+   (qualquer botão do controle cancela e deixa escolher). `ufitanalista.github.io/tv/#menu` abre o menu sem contagem.
+- A senha vira a chave por PBKDF2 (300 mil voltas, sal `ufit-tvs`), igual em `site/index.html` e `ferramentas/cripto.js`.
 
 ## Mudar uma lista (operadores, venda dada como paga, ajuste de vendedor, TV das unidades) ou o Balcão
 1. Mude o arquivo de sempre na pasta `dashboard-tv` (versão do PC). Ela continua sendo a fonte de tudo.
@@ -23,13 +26,14 @@ lembra dela e os links entre as páginas funcionam sem o `#k=`.
 ## Senhas e chaves
 - Senhas do EVO e do GoVoice e as duas chaves ficam no cofre do GitHub (Settings → Secrets → Actions).
   Gravar ou trocar: `python ferramentas/gravar_segredos.py` (lê os arquivos de `C:\Users\comercial2\.claude`).
-- **Trocar a chave das TVs** (link vazou): troque **só o campo `tv`** de `ufit-tvs-chaves.json` por uma chave nova
-  (`node ferramentas/cripto.js nova-chave`), rode `python ferramentas/gravar_segredos.py` e depois
-  `python publicar.py --enviar` (o Balcão é recriptografado com a chave nova). Abra cada TV com o link novo.
+- **Trocar a senha das TVs** (vazou): gere uma nova (`node ferramentas/cripto.js nova-senha`), calcule a chave
+  (`SENHA=<nova> node ferramentas/cripto.js chave-da-senha SENHA`) e troque **só** os campos `senha_tv` e `tv` de
+  `ufit-tvs-chaves.json`. Depois `python ferramentas/gravar_segredos.py` e `python publicar.py --enviar`.
+  Cada TV volta para a tela de senha sozinha e pede a nova.
   Não troque o campo `interna`: o estado guardado no site está fechado com ela.
 
 ## Acompanhar
-- Execuções: https://github.com/ufitanalista/ufit-tvs/actions (o registro é público: só mostra contagens).
+- Execuções: https://github.com/ufitanalista/tv/actions (o registro é público: só mostra contagens).
 - Se a TV mostrar "SEM ATUALIZAÇÃO DESDE…", veja a última execução ali.
 - O GitHub desliga as execuções agendadas de projeto público depois de **60 dias sem nenhuma mudança enviada**.
   Qualquer `publicar.py --enviar` com alteração conta; se ficar parado, ele avisa por e-mail e é só religar em Actions.
