@@ -26,6 +26,12 @@ function decifrar(k, buf) {
 
 const [cmd, env, a, b] = process.argv.slice(2);
 if (cmd === 'nova-chave') console.log(crypto.randomBytes(32).toString('base64url'));
+// "node cripto.js variar estado.enc" → o mesmo nome com letras sorteadas em código (ex.: e%73tado.enc).
+// O cache do GitHub Pages ignora "?t=", mas trata cada escrita como outro endereço: assim vem sempre a versão nova.
+else if (cmd === 'variar') {
+  const nome = env, i = crypto.randomInt(1, 2 ** Math.min(nome.length, 12));
+  console.log([...nome].map((c, j) => (j < 12 && (i >> j) & 1) ? '%' + c.charCodeAt(0).toString(16).toUpperCase() : c).join(''));
+}
 else if (cmd === 'cifrar') fs.writeFileSync(b, cifrar(chave(env), fs.readFileSync(a)));
 else if (cmd === 'decifrar') fs.writeFileSync(b, decifrar(chave(env), fs.readFileSync(a)));
 else if (cmd === 'empacotar') {

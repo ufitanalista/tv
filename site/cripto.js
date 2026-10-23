@@ -25,8 +25,19 @@
     return chave;
   }
 
+  // O cache do GitHub Pages guarda cada endereço por 10 min e ignora "?t=". Mas "%64ados.enc" é o mesmo arquivo
+  // que "dados.enc" com outro endereço no cache: a cada 20 s a página usa outra combinação de letras em código,
+  // e assim sempre recebe a versão recente (dentro da mesma janela de 20 s as TVs dividem a mesma cópia).
+  function variar(nome) {
+    var n = Math.min(nome.length, 12), i = Math.floor(Date.now() / 20000) % ((1 << n) - 1) + 1, out = '';
+    for (var j = 0; j < nome.length; j++) {
+      out += (j < n && (i >> j) & 1) ? '%' + nome.charCodeAt(j).toString(16).toUpperCase() : nome[j];
+    }
+    return out;
+  }
+
   function ler(arquivo) {
-    return fetch(arquivo + '?t=' + Date.now(), { cache: 'no-store' })
+    return fetch(variar(arquivo), { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
       .then(function (buf) {
         return obterChave().then(function (ck) {

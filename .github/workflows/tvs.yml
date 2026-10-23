@@ -44,14 +44,15 @@ jobs:
           mkdir -p /tmp/ufit/cred /tmp/ufit/saida
           node ferramentas/cripto.js desempacotar CHAVE_INTERNA config.enc "$UFIT_CONFIG"
           t=$(date +%s)
-          if curl -fsS "$SITE_URL/estado.enc?t=$t" -o /tmp/ufit/estado.enc \
+          # o cache do Pages ignora "?t=": pede o arquivo com letras em código (outro endereço no cache, mesmo arquivo)
+          if curl -fsS "$SITE_URL/$(node ferramentas/cripto.js variar estado.enc)" -o /tmp/ufit/estado.enc \
              && node ferramentas/cripto.js desempacotar CHAVE_INTERNA /tmp/ufit/estado.enc "$UFIT_ESTADO"; then
             echo "estado: última coleta"
           else
             node ferramentas/cripto.js desempacotar CHAVE_INTERNA estado-inicial.enc "$UFIT_ESTADO"
             echo "estado: inicial"
           fi
-          curl -fsS "$SITE_URL/conv.enc?t=$t" -o /tmp/ufit/conv-anterior.enc || echo "sem convênios anteriores"
+          curl -fsS "$SITE_URL/$(node ferramentas/cripto.js variar conv.enc)" -o /tmp/ufit/conv-anterior.enc || echo "sem convênios anteriores"
           printf '%s' "$EVO_CRED" > "$UFIT_CREDENCIAIS/evo-api-credentials.json"
           printf '%s' "$GOVOICE_CRED" > "$UFIT_CREDENCIAIS/govoice-credentials.json"
 
