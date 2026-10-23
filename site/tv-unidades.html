@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unidades e Planos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tv.css">
+<style>
+  .sub-topo { font-size: 24px; color: var(--texto-2); font-weight: 600; }
+
+  /* Campanha */
+  .camp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+  .camp-cab { display: flex; align-items: center; gap: 26px; flex: none; }
+  .camp-cab h2 { font-size: 64px; font-weight: 800; color: var(--amarelo); letter-spacing: 1px; }
+  .camp-cab .fr { font-size: 26px; color: var(--texto-2); font-weight: 600; }
+  .faltam { margin-left: auto; background: var(--critico); color: #fff; border-radius: 16px; padding: 12px 26px; text-align: center; }
+  .faltam b { display: block; font-size: 54px; line-height: 1; }
+  .faltam span { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .oferta { background: var(--cartao); border-radius: 18px; padding: 26px 26px 22px; border-top: 8px solid var(--linha); display: flex; flex-direction: column; gap: 6px; }
+  .oferta.VIP { border-top-color: var(--amarelo); }
+  .oferta .tp { font-size: 22px; font-weight: 800; color: var(--texto-2); text-transform: uppercase; letter-spacing: 1px; }
+  .oferta .nm { font-size: 40px; font-weight: 800; }
+  .oferta .de { font-size: 24px; color: var(--texto-3); font-weight: 600; margin-top: 10px; }
+  .oferta .de s { text-decoration-thickness: 2px; }
+  .oferta .por { font-size: 28px; font-weight: 700; color: var(--texto-2); }
+  .oferta .por { white-space: nowrap; }
+  .oferta .por b { font-size: 64px; font-weight: 800; color: var(--amarelo); line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .oferta .cod { margin-top: auto; padding-top: 14px; font-size: 19px; color: var(--texto-3); font-weight: 600; }
+  .oferta .cod b { color: var(--texto); background: var(--cartao-2); border: 1px dashed var(--texto-3); padding: 4px 10px; border-radius: 8px; letter-spacing: 1px; }
+  .rec { background: var(--cartao); border-radius: 18px; padding: 20px 26px; display: flex; align-items: center; gap: 28px; flex: none; }
+  .rec .t { font-size: 26px; font-weight: 800; white-space: nowrap; }
+  .rec .t small { display: block; font-size: 18px; color: var(--texto-3); font-weight: 600; }
+  .rec .lista-rec { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+  .rec .chip { background: var(--cartao-2); border-radius: 10px; padding: 8px 16px; font-size: 21px; font-weight: 600; color: var(--texto-2); }
+  .rec .chip b { color: var(--amarelo); }
+
+  /* Como funciona */
+  .como { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1.4; }
+  .linha-pl { background: var(--cartao); border-radius: 18px; padding: 30px 34px; border-top: 8px solid var(--linha); }
+  .linha-pl.VIP { border-top-color: var(--amarelo); }
+  .linha-pl h3 { font-size: 58px; font-weight: 800; line-height: 1; }
+  .linha-pl.VIP h3 { color: var(--amarelo); }
+  .linha-pl .rs { font-size: 28px; color: var(--texto-2); font-weight: 600; margin: 8px 0 24px; }
+  .linha-pl ul { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+  .linha-pl li { font-size: 30px; font-weight: 600; display: flex; gap: 12px; align-items: baseline; }
+  .linha-pl li::before { content: '✓'; color: var(--livre); font-weight: 800; }
+  .tipos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; flex: 1; }
+  .tipo { background: var(--cartao); border-radius: 18px; padding: 26px 32px; }
+  .tipo h4 { font-size: 42px; font-weight: 800; margin-bottom: 12px; }
+  .tipo p { font-size: 28px; color: var(--texto-2); font-weight: 600; margin-top: 10px; }
+  .tipo p::before { content: '• '; color: var(--amarelo); }
+
+  /* Unidade */
+  .uni-cab { display: flex; align-items: flex-end; gap: 26px; flex: none; }
+  .uni-cab h2 { font-size: 66px; font-weight: 800; line-height: 1; }
+  .uni-cab .loc { font-size: 26px; color: var(--texto-2); font-weight: 600; padding-bottom: 6px; }
+  .uni-cab .eq { margin-left: auto; text-align: right; }
+  .uni-cab .eq .r { font-size: 18px; color: var(--texto-3); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .uni-cab .eq .n { font-size: 30px; font-weight: 800; color: var(--amarelo); }
+  .uni { display: grid; grid-template-columns: 1fr 560px; gap: 26px; flex: 1; min-height: 0; }
+  table.precos { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+  table.precos th { font-size: 17px; color: var(--texto-2); font-weight: 700; text-transform: uppercase; text-align: right; padding: 0 18px 2px; }
+  table.precos th.e { text-align: left; }
+  table.precos td { background: var(--cartao); font-size: 30px; font-weight: 700; padding: 19px 18px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.precos td:first-child { border-radius: 12px 0 0 12px; text-align: left; font-weight: 800; }
+  table.precos td:last-child { border-radius: 0 12px 12px 0; }
+  table.precos td small { font-size: 18px; color: var(--texto-3); font-weight: 600; }
+  table.precos td.cheio { color: var(--texto-3); }
+  table.precos td.emcamp { color: var(--amarelo); font-weight: 800; font-size: 32px; }
+  table.precos td .tag { display: inline-block; font-size: 15px; font-weight: 800; padding: 3px 9px; border-radius: 6px; margin-left: 10px; vertical-align: middle; }
+  .tag.VIP { background: rgba(238,174,14,.18); color: var(--amarelo); }
+  .tag.FIT { background: var(--cartao-2); color: var(--texto-2); }
+  .nota { font-size: 19px; color: var(--texto-3); font-weight: 600; margin-top: 6px; }
+
+  .card-var { background: var(--cartao); border-radius: 18px; padding: 28px 32px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .card-var .slide { position: absolute; inset: 28px 32px 56px; opacity: 0; transition: opacity .7s; display: flex; flex-direction: column; gap: 12px; }
+  .card-var .slide.on { opacity: 1; }
+  .card-var .rot { font-size: 20px; color: var(--amarelo); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+  .card-var .grande { font-size: 60px; font-weight: 800; line-height: 1.1; }
+  .card-var .txt { font-size: 28px; color: var(--texto-2); font-weight: 600; line-height: 1.35; }
+  .card-var .txt b { color: var(--texto); }
+  .card-var .aula { display: flex; gap: 16px; font-size: 25px; font-weight: 700; }
+  .card-var .aula span { color: var(--amarelo); width: 82px; flex: none; font-variant-numeric: tabular-nums; }
+  .card-var .bolinhas { position: absolute; left: 32px; bottom: 22px; display: flex; gap: 8px; }
+  .card-var .bolinhas i { width: 10px; height: 10px; border-radius: 50%; background: var(--linha); }
+  .card-var .bolinhas i.on { background: var(--amarelo); }
+</style>
+</head>
+<body>
+<div id="palco">
+  <div class="topo">
+    <img src="logo_ufit.png" alt="UFit">
+    <h1>UNIDADES E PLANOS · <span id="periodo"></span></h1>
+    <div class="direita">
+      <span class="selo-exemplo" id="selo" style="display:none"></span>
+      <div class="data" id="data"></div>
+      <div class="relogio" id="relogio"></div>
+    </div>
+  </div>
+  <div class="telas" id="telas"></div>
+  <div class="rodape">
+    <div class="pontos" id="pontos"></div>
+    <div class="nome-tela" id="nome-tela"></div>
+    <div class="progresso"><div id="barra"></div></div>
+  </div>
+</div>
+
+<script src="cripto.js" data-arquivo="dados.enc" data-var="DADOS"></script>
+<script src="nosleep.min.js"></script>
+<script src="tv-comum.js"></script>
+<script type="text/plain" class="app">
+var SEGUNDOS_POR_TELA = 18;
+var SEGUNDOS_POR_CARD = 6;   // troca das informações no cartão da unidade
+
+var esc = TV.esc;
+function U() { return window.DADOS.tvUnidades; }
+function reais(v) { return TV.reais(v, true); }
+function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+function plano(chave) { return U().planos.filter(function (p) { return p.chave === chave; })[0]; }
+function precoDe(u, chave) { return u.planos.filter(function (p) { return p.chave === chave; })[0] || { faltando: true }; }
+// meses do contrato (Tijucas parcela o anual em até 13x, mas o contrato é de 12 meses)
+function meses(pp) { return pp.duracao || pp.parcelas || 1; }
+function porMes(pp, comVoucher) { return ((pp.valor - (comVoucher && pp.voucher ? pp.voucher.desconto : 0)) / meses(pp)); }
+// valor que mais se repete entre as unidades (para o cartão da campanha)
+function maisComum(lista) {
+  var c = {}; lista.forEach(function (v) { var k = v.toFixed(2); c[k] = (c[k] || 0) + 1; });
+  return parseFloat(Object.keys(c).sort(function (a, b) { return c[b] - c[a]; })[0]);
+}
+function diasAte(iso) { return Math.max(0, Math.ceil((new Date(iso + 'T23:59:59') - Date.now()) / 86400000)); }
+
+// equipe que trabalha a unidade: campanha do GoVoice com o nome da unidade
+function equipeDa(u) {
+  var chaves = [norm(u.nome), norm(u.slug.replace('-', ' ')), norm(u.nome.split(' ')[0])];
+  var nomes = {}; (window.DADOS.operadores || []).forEach(function (o) { nomes[o.ramal] = o.govoice; });
+  var eq = (window.DADOS.equipes || []).filter(function (e) {
+    return e.campanhas.some(function (c) { var n = norm(c.nome); return chaves.some(function (k) { return k.length > 3 && n.indexOf(k) >= 0; }); });
+  })[0];
+  return eq ? { nome: eq.nome, quem: eq.membros.map(function (r) { return nomes[r] || r; }) } : null;
+}
+
+// ---------- Tela: campanha ----------
+function telaCampanha() {
+  var c = U().campanha, uns = U().unidades;
+  var expira = []; uns.forEach(function (u) { u.planos.forEach(function (p) { if (p.voucher) expira.push(p.voucher.expira); }); });
+  if (!expira.length) return '<div class="camp-cab"><h2>' + esc(c.nome) + '</h2><span class="fr">sem voucher ativo no EVO para a campanha</span></div>';
+  var fim = expira.sort()[0], dias = diasAte(fim), d = new Date(fim + 'T12:00:00');
+  var cards = ['anual_vip', 'anual_fit', 'sem_vip', 'sem_fit'].map(function (k) {
+    var p = plano(k), lst = uns.map(function (u) { return precoDe(u, k); }).filter(function (x) { return !x.faltando && x.voucher; });
+    if (!lst.length) return '';
+    var por = maisComum(lst.map(function (x) { return porMes(x, true); })), de = maisComum(lst.map(function (x) { return porMes(x, false); }));
+    var n = meses(lst[0]);
+    return '<div class="oferta ' + p.linha + '"><div class="tp">' + esc(U().tipos[p.tipo].nome) + ' · ' + n + ' meses</div><div class="nm">' + esc(p.nome) + '</div>' +
+      '<div class="de">de <s>' + n + 'x ' + reais(de) + '</s></div><div class="por">' + n + 'x <b>' + reais(por) + '</b></div>' +
+      '<div class="cod">voucher <b>' + esc(lst[0].voucher.codigo) + '</b></div></div>';
+  }).join('');
+  var rec = [];
+  uns.forEach(function (u) {
+    ['fit_rec', 'vip_rec'].forEach(function (k) {
+      var x = precoDe(u, k);
+      if (x.promo) rec.push('<span class="chip">' + esc(u.nome) + ' · ' + esc(plano(k).nome) + ': 1ª mensalidade <b>' + reais(x.promo.valor) + '</b>, depois ' + reais(x.valor) + '</span>');
+    });
+  });
+  return '<div class="camp-cab"><h2>🔥 ' + esc(c.nome) + '</h2><span class="fr">' + esc(c.frase) + '<br>vale até ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' nas ' + uns.length + ' unidades do call center</span>' +
+    '<div class="faltam"><b>' + dias + '</b><span>' + (dias === 1 ? 'dia' : 'dias') + ' para acabar</span></div></div>' +
+    '<div class="camp">' + cards + '</div>' +
+    (rec.length ? '<div class="rec"><div class="t">Recorrente<small>com 1ª mensalidade promocional</small></div><div class="lista-rec">' + rec.join('') + '</div></div>' : '') +
+    '<div class="nota">+ matrícula de R$ 59,90 (parcelada junto no cartão). Preço "de" = valor normal do contrato por mês. Valores mais comuns entre as unidades; o preço de cada uma está na tela da unidade.</div>';
+}
+
+// ---------- Tela: como funciona cada plano ----------
+function telaComo() {
+  var L = U().linhas, T = U().tipos;
+  var linha = function (k) {
+    return '<div class="linha-pl ' + k + '"><h3>' + k + '</h3><div class="rs">' + esc(L[k].resumo) + '</div><ul>' +
+      L[k].beneficios.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul></div>';
+  };
+  return '<div class="como">' + linha('FIT') + linha('VIP') + '</div>' +
+    '<div class="tipos">' + ['recorrente', 'semestral', 'anual'].map(function (k) {
+      return '<div class="tipo"><h4>' + esc(T[k].nome) + '</h4>' + T[k].como.map(function (c) { return '<p>' + esc(c) + '</p>'; }).join('') + '</div>';
+    }).join('') + '</div>';
+}
+
+// ---------- Tela: uma unidade ----------
+var DIAS = ['', 'segunda', 'terça', 'quarta', 'quinta', 'sexta'];
+function slidesUnidade(u) {
+  var s = [];
+  var anos = (Date.now() - new Date(u.abertura)) / (365.25 * 86400000);
+  var idade = anos < 1 ? Math.max(1, Math.round(anos * 12)) + ' meses' : anos.toFixed(1).replace('.', ',').replace(',0', '') + (anos < 1.05 ? ' ano' : ' anos');
+  var ab = new Date(u.abertura + 'T12:00:00');
+  s.push('<div class="rot">A unidade</div><div class="grande">' + u.m2.toLocaleString('pt-BR') + ' m²</div>' +
+    '<div class="txt">Série <b>' + esc(u.serie) + '</b> · aberta em <b>' + String(ab.getDate()).padStart(2, '0') + '/' + String(ab.getMonth() + 1).padStart(2, '0') + '/' + ab.getFullYear() + '</b><br>funcionando há ' + idade + '</div>');
+  s.push('<div class="rot">Onde fica</div><div class="txt"><b>' + esc(u.endereco) + '</b><br>' + esc(u.bairro) + ' · ' + esc(u.cidade) + '/' + esc(u.uf) + '</div>' +
+    '<div class="rot" style="margin-top:14px">WhatsApp da unidade</div><div class="grande">' + esc(u.whatsapp) + '</div>');
+  var dia = new Date().getDay(), col = dia >= 1 && dia <= 5 ? dia : 1;
+  var aulas = (u.aulas || []).filter(function (l) { return l[col]; });
+  if (aulas.length) {
+    s.push('<div class="rot">Aulas coletivas · ' + (dia >= 1 && dia <= 5 ? 'hoje (' + DIAS[col] + ')' : 'segunda') + '</div>' +
+      aulas.slice(0, 8).map(function (l) { return '<div class="aula"><span>' + esc(l[0]) + '</span>' + esc(l[col]) + '</div>'; }).join('') +
+      (aulas.length > 8 ? '<div class="txt">+ ' + (aulas.length - 8) + ' aulas</div>' : ''));
+  }
+  var rec = ['fit_rec', 'vip_rec'].map(function (k) { return [k, precoDe(u, k)]; }).filter(function (x) { return x[1].promo; });
+  if (rec.length) {
+    s.push('<div class="rot">Promoção do recorrente</div>' + rec.map(function (x) {
+      return '<div class="txt"><b>' + esc(plano(x[0]).nome) + '</b>: 1ª mensalidade</div><div class="grande">' + reais(x[1].promo.valor) + '</div><div class="txt">depois ' + reais(x[1].valor) + ' por mês</div>';
+    }).join(''));
+  }
+  return s;
+}
+function telaUnidade(u) {
+  var eq = equipeDa(u);
+  var linhas = U().planos.map(function (p) {
+    var x = precoDe(u, p.chave);
+    if (x.faltando) return '<tr><td>' + esc(p.nome) + '<span class="tag ' + p.linha + '">' + p.linha + '</span></td><td class="cheio" colspan="3">não encontrado no EVO</td></tr>';
+    var n = meses(x), rec = p.tipo === 'recorrente';
+    var normal = rec ? reais(x.valor) + '<small>/mês</small>' : n + 'x ' + reais(porMes(x, false));
+    var camp = x.voucher ? n + 'x ' + reais(porMes(x, true)) : x.promo ? '1ª ' + reais(x.promo.valor) : '—';
+    var total = rec ? '—' : reais(x.valor - (x.voucher ? x.voucher.desconto : 0));
+    return '<tr><td>' + esc(p.nome) + '<span class="tag ' + p.linha + '">' + p.linha + '</span></td><td class="cheio">' + normal + '</td><td class="emcamp">' + camp + '</td><td>' + total + '</td></tr>';
+  }).join('');
+  var semMatr = U().planos.filter(function (p) { var x = precoDe(u, p.chave); return !x.faltando && !x.matricula; }).map(function (p) { return p.nome; });
+  var slides = slidesUnidade(u);
+  return '<div class="uni-cab"><h2>' + esc(u.nome) + '</h2><div class="loc">' + esc(u.cidade) + '/' + esc(u.uf) + '</div>' +
+    (eq ? '<div class="eq"><div class="r">' + esc(eq.nome) + ' trabalha esta unidade</div><div class="n">' + eq.quem.map(esc).join(' · ') + '</div></div>' : '') + '</div>' +
+    '<div class="uni"><div><table class="precos"><tr><th class="e">Plano</th><th>Preço normal</th><th>' + esc(U().campanha.nome) + '</th><th>Total do contrato</th></tr>' + linhas + '</table>' +
+    '<div class="nota">+ matrícula R$ 59,90' + (semMatr.length ? ' (sem matrícula: ' + semMatr.map(esc).join(', ') + ')' : '') + '</div></div>' +
+    '<div class="card-var" data-slides="' + slides.length + '">' + slides.map(function (h, i) { return '<div class="slide' + (i ? '' : ' on') + '">' + h + '</div>'; }).join('') +
+    '<div class="bolinhas">' + slides.map(function (h, i) { return '<i class="' + (i ? '' : 'on') + '"></i>'; }).join('') + '</div></div></div>';
+}
+
+// ---------- Montagem e rodízio ----------
+var telaAtual = 0, cardAtual = 0, cardDesde = Date.now();
+function montar() {
+  var box = document.getElementById('telas');
+  if (!U()) { box.innerHTML = '<div class="tela ativa" data-nome=""><div class="camp-cab"><h2>Carregando os planos do EVO…</h2></div></div>'; return; }
+  var telas = [['Campanha', telaCampanha()], ['Como funciona cada plano', telaComo()]];
+  U().unidades.forEach(function (u) { telas.push([u.nome, telaUnidade(u)]); });
+  if (box.children.length !== telas.length) box.innerHTML = telas.map(function () { return '<div class="tela"></div>'; }).join('');
+  telas.forEach(function (t, i) {
+    var el = box.children[i];
+    el.dataset.nome = t[0];
+    el.innerHTML = t[1];
+    el.classList.toggle('ativa', i === telaAtual);
+  });
+  mostrarCard();
+}
+function mostrarCard() {
+  var card = document.querySelectorAll('.tela')[telaAtual];
+  card = card && card.querySelector('.card-var');
+  if (!card) return;
+  var n = +card.dataset.slides, i = cardAtual % n;
+  card.querySelectorAll('.slide').forEach(function (s, k) { s.classList.toggle('on', k === i); });
+  card.querySelectorAll('.bolinhas i').forEach(function (s, k) { s.classList.toggle('on', k === i); });
+}
+setInterval(function () { if (Date.now() - cardDesde >= SEGUNDOS_POR_CARD * 1000) { cardAtual++; cardDesde = Date.now(); mostrarCard(); } }, 500);
+
+TV.iniciar();
+montar();
+TV.rodizio(SEGUNDOS_POR_TELA, function (i) {
+  telaAtual = i; cardAtual = 0; cardDesde = Date.now();
+  var t = document.querySelectorAll('.tela')[i];
+  document.getElementById('periodo').textContent = (t && t.dataset.nome || '').toUpperCase();
+  montar();
+});
+TV.recarregar(60, montar);
+</script>
+</body>
+</html>

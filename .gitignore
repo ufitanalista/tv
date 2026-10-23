@@ -1,0 +1,17 @@
+# Projeto PÚBLICO: só entra o que está liberado abaixo. Dados só criptografados (.enc).
+/*
+!/.gitignore
+!/.gitattributes
+!/LEIA-ME.md
+!/publicar.py
+!/config.enc
+!/estado-inicial.enc
+!/.github/
+!/coletor/
+!/ferramentas/
+!/site/
+*.csv
+*.json
+dados.js
+convenios-dados.js
+__pycache__/

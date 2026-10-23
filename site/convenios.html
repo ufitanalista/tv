@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Convênios UFit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Painel de convênios: filtros no topo, números do momento, abas (Convênios · Vendas · Parados) e a ficha do convênio ao clicar. */
+:root {
+  --bg: #f3f2ee; --surface: #ffffff; --surface-2: #f8f7f3; --ink: #17171a; --muted: #5d5c57; --line: #dddbd3;
+  --brand: #ffcf00; --brand-ink: #17171a; --brand-soft: #fff4c2;
+  --bar: #b07d00; --bar-ativa: #17171a;
+  --ok: #1d7a46; --ok-soft: #e3f3e9; --warn: #9a5b00; --warn-soft: #fff1d6; --crit: #b42318; --crit-soft: #fde8e6;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif; --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121214; --surface: #1c1c20; --surface-2: #232328; --ink: #f1efe8; --muted: #a6a49c; --line: #2f2f35;
+    --brand: #ffd21a; --brand-ink: #121214; --brand-soft: #3a3210; --bar: #e0b100; --bar-ativa: #f1efe8;
+    --ok: #5fcf8d; --ok-soft: #173324; --warn: #f2b45a; --warn-soft: #3a2a10; --crit: #ff8a7f; --crit-soft: #3d1a17;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121214; --surface: #1c1c20; --surface-2: #232328; --ink: #f1efe8; --muted: #a6a49c; --line: #2f2f35;
+  --brand: #ffd21a; --brand-ink: #121214; --brand-soft: #3a3210; --bar: #e0b100; --bar-ativa: #f1efe8;
+  --ok: #5fcf8d; --ok-soft: #173324; --warn: #f2b45a; --warn-soft: #3a2a10; --crit: #ff8a7f; --crit-soft: #3d1a17;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 500 15px/1.4 var(--body); }
+.num { font-variant-numeric: tabular-nums; }
+header { background: #17171a; color: #f3f2ee; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+header img { height: 38px; }
+header h1 { font: 800 30px/1 var(--display); margin: 0; letter-spacing: .3px; }
+header h1 span { color: var(--brand); }
+.filtros { margin-left: auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+select, input[type=search] { font: 600 15px var(--body); padding: 8px 12px; border-radius: 8px; border: 1px solid #3a3a40; background: #26262b; color: #f3f2ee; min-width: 0; }
+input[type=search] { width: 240px; }
+.atualizado { font-size: 13px; color: #a6a49c; }
+main { max-width: 1400px; margin: 0 auto; padding: 20px 24px 40px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-top: 5px solid var(--brand); border-radius: 12px; padding: 14px 18px; }
+.kpi .rot { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.kpi .val { font: 800 44px/1.05 var(--display); margin-top: 4px; }
+.kpi .sub { font-size: 14px; color: var(--muted); }
+.kpi.alerta { border-top-color: var(--crit); }
+.abas { display: flex; gap: 6px; margin: 22px 0 14px; border-bottom: 2px solid var(--line); overflow-x: auto; }
+.abas button { font: 700 22px var(--display); background: none; border: 0; color: var(--muted); padding: 8px 16px; cursor: pointer; border-bottom: 4px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+.abas button.ativa { color: var(--ink); border-bottom-color: var(--brand); }
+.cartao { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; min-width: 0; }
+.cartao h2 { font: 800 24px var(--display); margin: 0 0 10px; }
+.cartao h2 small { font: 500 14px var(--body); color: var(--muted); margin-left: 8px; }
+.tabela { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 700; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); }
+th.n, td.n { text-align: right; }
+tbody tr.clica { cursor: pointer; }
+tbody tr.clica:hover { background: var(--brand-soft); }
+td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-size: 13px; }
+.selo { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.selo.parado { background: var(--crit-soft); color: var(--crit); }
+.selo.ok { background: var(--ok-soft); color: var(--ok); }
+.grade2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.vazio { color: var(--muted); padding: 18px 0; text-align: center; }
+.barra-mini { display: inline-block; height: 8px; border-radius: 0 4px 4px 0; background: var(--bar); vertical-align: middle; margin-right: 8px; }
+/* gráfico de barras por mês */
+.grafico { display: flex; align-items: flex-end; gap: 2px; height: 220px; padding-top: 22px; position: relative; }
+.grafico .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; cursor: pointer; position: relative; }
+.grafico .col .b { width: 70%; max-width: 46px; background: var(--bar); border-radius: 4px 4px 0 0; min-height: 2px; opacity: .55; }
+.grafico .col.ativa .b, .grafico .col:hover .b { opacity: 1; }
+.grafico .col.ativa .b { background: var(--bar-ativa); }
+.grafico .col .v { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.grafico .col .m { font-size: 12px; color: var(--muted); margin-top: 6px; height: 16px; }
+.base { border-top: 1px solid var(--line); }
+.dica { position: fixed; pointer-events: none; background: #17171a; color: #f3f2ee; font-size: 13px; padding: 6px 10px; border-radius: 6px; display: none; z-index: 9; }
+.ficha-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 12px; }
+.ficha-topo h2 { font: 800 34px var(--display); margin: 0; }
+.botao { font: 700 14px var(--body); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.botao.prim { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+.nota { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.aviso { background: var(--warn-soft); color: var(--warn); border-radius: 10px; padding: 12px 16px; font-weight: 600; margin-bottom: 14px; }
+@media (max-width: 900px) {
+  header, main { padding-left: 16px; padding-right: 16px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grade2 { grid-template-columns: 1fr; }
+  .filtros { margin-left: 0; width: 100%; }
+  input[type=search] { flex: 1; width: auto; }
+  .kpi .val { font-size: 34px; }
+}
+</style>
+<body>
+<header>
+  <img src="logo_ufit.png" alt="UFit">
+  <h1>Painel de <span>Convênios</span></h1>
+  <div class="filtros">
+    <select id="f-unidade" aria-label="Unidade"><option value="">Todas as unidades</option></select>
+    <input id="f-busca" type="search" placeholder="Buscar convênio ou aluno…" aria-label="Buscar">
+    <span class="atualizado" id="atualizado"></span>
+  </div>
+</header>
+<main>
+  <div id="aviso"></div>
+  <section class="kpis" id="kpis"></section>
+  <nav class="abas" id="abas">
+    <button data-aba="convenios" class="ativa">Convênios</button>
+    <button data-aba="vendas">Vendas novas</button>
+    <button data-aba="parados">Parados</button>
+    <button data-aba="ficha" id="aba-ficha" hidden>Ficha</button>
+  </nav>
+  <section id="conteudo"></section>
+</main>
+<div class="dica" id="dica"></div>
+<script src="cripto.js" data-arquivo="conv.enc" data-var="CONV"></script>
+<script type="text/plain" class="app">
+(function () {
+  var D = window.CONV;
+  var $ = function (id) { return document.getElementById(id); };
+  if (!D) {
+    $('aviso').innerHTML = '<div class="aviso">Os dados dos convênios ainda estão carregando (na 1ª vez o servidor lê 13 meses de vendas). A página tenta de novo em 1 minuto.</div>';
+    setTimeout(function () { location.reload(); }, 60000);
+    return;
+  }
+  var MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  var hoje = new Date(D.atualizadoEm);
+  var mesAtual = D.atualizadoEm.slice(0, 7);
+  var est = { aba: 'convenios', unidade: '', busca: '', conv: null, mes: mesAtual, ord: { campo: 'alunos', desc: true } };
+
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function n(v) { return (v || 0).toLocaleString('pt-BR'); }
+  function reais(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function dt(s) { return s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : '–'; }
+  function nomeMes(ym, ano) { var m = MESES[+ym.slice(5, 7) - 1]; return ano ? m + '/' + ym.slice(2, 4) : m; }
+  function dias(s) { return s ? Math.floor((hoje - new Date(s + 'T12:00:00')) / 864e5) : null; }
+  function norm(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+
+  var hora = new Date(D.atualizadoEm);
+  $('atualizado').textContent = 'Atualizado ' + dt(D.atualizadoEm.slice(0, 10)) + ' às ' + String(hora.getHours()).padStart(2, '0') + ':' + String(hora.getMinutes()).padStart(2, '0');
+
+  var unidades = {};
+  D.alunos.forEach(function (a) { unidades[a.unidade] = 1; });
+  D.vendas.forEach(function (v) { unidades[v.unidade] = 1; });
+  Object.keys(unidades).sort(function (a, b) { return a.localeCompare(b, 'pt-BR'); }).forEach(function (u) {
+    var o = document.createElement('option'); o.value = o.textContent = u; $('f-unidade').appendChild(o);
+  });
+
+  // últimos 12 meses, do mais antigo para o atual
+  var meses = [];
+  for (var i = 11; i >= 0; i--) { var d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1); meses.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')); }
+
+  function filtrados() {
+    var u = est.unidade;
+    return {
+      alunos: D.alunos.filter(function (a) { return !u || a.unidade === u; }),
+      vendas: D.vendas.filter(function (v) { return !u || v.unidade === u; })
+    };
+  }
+
+  // resumo por convênio, com o filtro de unidade aplicado
+  function porConvenio(f) {
+    var r = {};
+    function pega(k) {
+      return r[k] || (r[k] = { k: k, nome: (D.convenios[k] || {}).nome || k, alunos: 0, mes: 0, ano: 0, ultima: null, unid: {}, valor: 0 });
+    }
+    f.alunos.forEach(function (a) { var c = pega(a.conv); c.alunos++; c.unid[a.unidade] = (c.unid[a.unidade] || 0) + 1; c.valor += a.valor || 0; });
+    f.vendas.forEach(function (v) {
+      var c = pega(v.conv);
+      if (v.d.slice(0, 7) === mesAtual) c.mes++;
+      if (v.d.slice(0, 7) >= meses[0]) c.ano++;
+      if (!c.ultima || v.d > c.ultima) c.ultima = v.d;
+    });
+    return Object.keys(r).map(function (k) {
+      var c = r[k]; c.diasSem = dias(c.ultima); c.parado = c.diasSem != null && c.diasSem >= D.diasParado;
+      c.ticket = c.alunos ? c.valor / c.alunos : 0;
+      return c;
+    });
+  }
+
+  function kpis() {
+    var f = filtrados(), cs = porConvenio(f);
+    var mesAnt = meses[10], diaHoje = D.atualizadoEm.slice(8, 10);
+    var vMes = f.vendas.filter(function (v) { return v.d.slice(0, 7) === mesAtual; }).length;
+    var vAnt = f.vendas.filter(function (v) { return v.d.slice(0, 7) === mesAnt && v.d.slice(8, 10) <= diaHoje; }).length;
+    var parados = cs.filter(function (c) { return c.parado; }).length;
+    var pct = !est.unidade && D.totalAtivos ? (f.alunos.length / D.totalAtivos * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% dos ' + n(D.totalAtivos) + ' alunos ativos da rede' : 'com contrato ativo hoje';
+    var dif = vMes - vAnt;
+    $('kpis').innerHTML =
+      '<div class="kpi"><div class="rot">Alunos ativos com convênio</div><div class="val num">' + n(f.alunos.length) + '</div><div class="sub">' + pct + '</div></div>' +
+      '<div class="kpi"><div class="rot">Convênios com aluno ativo</div><div class="val num">' + n(cs.filter(function (c) { return c.alunos; }).length) + '</div><div class="sub">' + n(cs.length) + ' com venda nos últimos 13 meses</div></div>' +
+      '<div class="kpi"><div class="rot">Vendas novas em ' + nomeMes(mesAtual) + '</div><div class="val num">' + n(vMes) + '</div><div class="sub">' + (dif >= 0 ? '▲ ' : '▼ ') + n(Math.abs(dif)) + ' vs. ' + nomeMes(mesAnt) + ' até o dia ' + +diaHoje + ' (' + n(vAnt) + ')</div></div>' +
+      '<div class="kpi' + (parados ? ' alerta' : '') + '"><div class="rot">Convênios parados</div><div class="val num">' + n(parados) + '</div><div class="sub">sem venda nova há ' + D.diasParado + ' dias ou mais</div></div>';
+  }
+
+  // ---------- tabelas genéricas
+  function tabela(colunas, linhas, opc) {
+    opc = opc || {};
+    if (!linhas.length) return '<div class="vazio">Nada para mostrar com esse filtro.</div>';
+    var h = '<div class="tabela"><table><thead><tr>' + colunas.map(function (c) {
+      var seta = opc.ord && opc.ord.campo === c.campo ? (opc.ord.desc ? ' ▼' : ' ▲') : '';
+      return '<th class="' + (c.n ? 'n' : '') + '" data-campo="' + (c.campo || '') + '">' + c.t + seta + '</th>';
+    }).join('') + '</tr></thead><tbody>';
+    h += linhas.map(function (l) {
+      return '<tr' + (opc.clique ? ' class="clica" data-k="' + esc(l.k) + '"' : '') + '>' + colunas.map(function (c) {
+        return '<td class="' + (c.n ? 'n num' : '') + (c.quebra ? ' quebra' : '') + '">' + c.f(l) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return h + '</tbody></table></div>';
+  }
+  function ordenar(lista, ord) {
+    return lista.sort(function (a, b) {
+      var x = a[ord.campo], y = b[ord.campo];
+      if (x == null) x = ord.desc ? -Infinity : Infinity; if (y == null) y = ord.desc ? -Infinity : Infinity;
+      var r = typeof x === 'string' ? x.localeCompare(y, 'pt-BR') : x - y;
+      return ord.desc ? -r : r;
+    });
+  }
+  function quebraUnid(u) {
+    return Object.keys(u).sort(function (a, b) { return u[b] - u[a]; }).map(function (k) { return esc(k) + ' ' + u[k]; }).join(' · ');
+  }
+  function buscaConv(c) { return !est.busca || norm(c.nome).indexOf(norm(est.busca)) >= 0; }
+
+  // ---------- aba Convênios
+  function abaConvenios() {
+    var cs = porConvenio(filtrados()).filter(buscaConv);
+    ordenar(cs, est.ord);
+    var max = Math.max.apply(null, cs.map(function (c) { return c.alunos; }).concat(1));
+    var html = '<div class="cartao"><h2>Convênios<small>clique num convênio para ver os alunos e as vendas</small></h2>' + tabela([
+      { t: 'Convênio', campo: 'nome', f: function (c) { return '<b>' + esc(c.nome) + '</b>'; } },
+      { t: 'Alunos ativos', campo: 'alunos', n: 1, f: function (c) { return '<span class="barra-mini" style="width:' + Math.round(c.alunos / max * 80) + 'px"></span>' + n(c.alunos); } },
+      { t: 'Mensalidade média', campo: 'ticket', n: 1, f: function (c) { return c.alunos ? reais(c.ticket) : '–'; } },
+      { t: 'Vendas ' + nomeMes(mesAtual), campo: 'mes', n: 1, f: function (c) { return n(c.mes); } },
+      { t: 'Vendas 12 meses', campo: 'ano', n: 1, f: function (c) { return n(c.ano); } },
+      { t: 'Última venda nova', campo: 'ultima', f: function (c) { return dt(c.ultima); } },
+      { t: 'Situação', campo: 'diasSem', f: function (c) { return c.parado ? '<span class="selo parado">■ Parado · ' + c.diasSem + ' dias</span>' : c.ultima ? '<span class="selo ok">● Vendendo</span>' : '–'; } },
+      { t: 'Alunos por unidade', f: function (c) { return quebraUnid(c.unid); }, quebra: 1 }
+    ], cs, { clique: 1, ord: est.ord }) + '<p class="nota">Mensalidade média = valor da última venda de plano dos alunos ativos (com o desconto do convênio).</p></div>';
+    $('conteudo').innerHTML = html;
+    ligarTabela();
+  }
+
+  // ---------- gráfico de barras por mês (uma série)
+  function grafico(contagem, clicavel) {
+    var max = Math.max.apply(null, meses.map(function (m) { return contagem[m] || 0; }).concat(1));
+    return '<div class="grafico">' + meses.map(function (m) {
+      var v = contagem[m] || 0;
+      return '<div class="col' + (clicavel && m === est.mes ? ' ativa' : '') + '" data-mes="' + m + '" data-dica="' + nomeMes(m, 1) + ': ' + n(v) + ' vendas novas">' +
+        '<div class="v num">' + (v ? n(v) : '') + '</div><div class="b" style="height:' + (v / max * 170) + 'px"></div><div class="m">' + nomeMes(m) + '</div></div>';
+    }).join('') + '</div><div class="base"></div>';
+  }
+  function contarMeses(vendas) {
+    var c = {}; vendas.forEach(function (v) { var m = v.d.slice(0, 7); c[m] = (c[m] || 0) + 1; }); return c;
+  }
+  function agrupar(vendas, campo) {
+    var r = {};
+    vendas.forEach(function (v) { var k = campo === 'conv' ? ((D.convenios[v.conv] || {}).nome || v.conv) : (v[campo] || '(sem nome)'); r[k] = (r[k] || 0) + 1; });
+    return Object.keys(r).map(function (k) { return { k: campo === 'conv' ? null : k, nome: k, qtd: r[k] }; }).sort(function (a, b) { return b.qtd - a.qtd; });
+  }
+
+  // ---------- aba Vendas novas
+  function abaVendas() {
+    var vs = filtrados().vendas.filter(function (v) { return !est.busca || norm((D.convenios[v.conv] || {}).nome).indexOf(norm(est.busca)) >= 0 || norm(v.cliente).indexOf(norm(est.busca)) >= 0; });
+    var doMes = vs.filter(function (v) { return v.d.slice(0, 7) === est.mes; });
+    var max = function (l) { return Math.max.apply(null, l.map(function (x) { return x.qtd; }).concat(1)); };
+    function bloco(titulo, lista) {
+      var m = max(lista);
+      return '<div class="cartao"><h2>' + titulo + '</h2>' + tabela([
+        { t: 'Nome', f: function (x) { return esc(x.nome); } },
+        { t: 'Vendas', n: 1, f: function (x) { return '<span class="barra-mini" style="width:' + Math.round(x.qtd / m * 60) + 'px"></span>' + n(x.qtd); } }
+      ], lista.slice(0, 15)) + (lista.length > 15 ? '<p class="nota">+ ' + (lista.length - 15) + ' outros</p>' : '') + '</div>';
+    }
+    $('conteudo').innerHTML =
+      '<div class="cartao"><h2>Vendas novas com convênio por mês<small>clique numa barra para ver o mês · não conta a cobrança mensal da recorrência</small></h2>' + grafico(contarMeses(vs), 1) + '</div>' +
+      '<div class="grade2">' + bloco('Por convênio · ' + nomeMes(est.mes, 1), agrupar(doMes, 'conv')) + bloco('Por unidade · ' + nomeMes(est.mes, 1), agrupar(doMes, 'unidade')) + bloco('Por consultor · ' + nomeMes(est.mes, 1), agrupar(doMes, 'consultor')) + '</div>' +
+      '<div class="cartao"><h2>Vendas de ' + nomeMes(est.mes, 1) + '<small>' + n(doMes.length) + ' vendas</small></h2>' + tabelaVendas(doMes) + '</div>';
+    document.querySelectorAll('.grafico .col').forEach(function (c) { c.onclick = function () { est.mes = c.dataset.mes; abaVendas(); }; });
+    ligarDicas();
+  }
+  function tabelaVendas(lista) {
+    return tabela([
+      { t: 'Data', f: function (v) { return dt(v.d); } },
+      { t: 'Aluno', f: function (v) { return esc(v.cliente); } },
+      { t: 'Convênio', f: function (v) { return esc((D.convenios[v.conv] || {}).nome || v.conv); } },
+      { t: 'Unidade', f: function (v) { return esc(v.unidade); } },
+      { t: 'Plano', f: function (v) { return esc(v.plano); } },
+      { t: 'Valor', n: 1, f: function (v) { return reais(v.valor); } },
+      { t: 'Desconto', n: 1, f: function (v) { return v.desconto ? reais(v.desconto) : '–'; } },
+      { t: 'Consultor', f: function (v) { return esc(v.consultor); } }
+    ], lista);
+  }
+
+  // ---------- aba Parados
+  function abaParados() {
+    var cs = porConvenio(filtrados()).filter(function (c) { return c.parado && buscaConv(c); })
+      .sort(function (a, b) { return b.alunos - a.alunos || a.diasSem - b.diasSem; });
+    $('conteudo').innerHTML = '<div class="cartao"><h2>Convênios parados<small>tiveram venda nova nos últimos 13 meses e nenhuma há ' + D.diasParado + ' dias ou mais · os com mais alunos ativos primeiro</small></h2>' + tabela([
+      { t: 'Convênio', f: function (c) { return '<b>' + esc(c.nome) + '</b>'; } },
+      { t: 'Última venda nova', f: function (c) { return dt(c.ultima); } },
+      { t: 'Dias sem venda', n: 1, f: function (c) { return n(c.diasSem); } },
+      { t: 'Alunos ativos', n: 1, f: function (c) { return n(c.alunos); } },
+      { t: 'Vendas 12 meses', n: 1, f: function (c) { return n(c.ano); } },
+      { t: 'Alunos por unidade', f: function (c) { return quebraUnid(c.unid) || '–'; }, quebra: 1 }
+    ], cs, { clique: 1 }) + '</div>';
+    ligarTabela();
+  }
+
+  // ---------- ficha do convênio
+  function abaFicha() {
+    var k = est.conv, c = D.convenios[k] || { nome: k, unidades: [] };
+    var f = filtrados();
+    var al = f.alunos.filter(function (a) { return a.conv === k && (!est.busca || norm(a.nome).indexOf(norm(est.busca)) >= 0); })
+      .sort(function (a, b) { return a.nome.localeCompare(b.nome, 'pt-BR'); });
+    var vs = f.vendas.filter(function (v) { return v.conv === k; });
+    var ult = vs.length ? vs[0].d : null, ds = dias(ult);
+    var parado = ds != null && ds >= D.diasParado;
+    $('conteudo').innerHTML =
+      '<div class="ficha-topo"><button class="botao" id="voltar">← Voltar</button><h2>' + esc(c.nome) + '</h2>' +
+      (parado ? '<span class="selo parado">■ Parado · ' + ds + ' dias sem venda nova</span>' : ult ? '<span class="selo ok">● Vendendo</span>' : '') +
+      '<button class="botao prim" id="csv" style="margin-left:auto">Baixar lista de alunos (Excel)</button></div>' +
+      '<section class="kpis">' +
+      '<div class="kpi"><div class="rot">Alunos ativos</div><div class="val num">' + n(al.length) + '</div><div class="sub">' + (est.unidade ? esc(est.unidade) : 'cadastrado em ' + c.unidades.length + ' unidade(s)') + '</div></div>' +
+      '<div class="kpi"><div class="rot">Vendas novas ' + nomeMes(mesAtual) + '</div><div class="val num">' + n(vs.filter(function (v) { return v.d.slice(0, 7) === mesAtual; }).length) + '</div><div class="sub">' + n(vs.filter(function (v) { return v.d.slice(0, 7) >= meses[0]; }).length) + ' nos últimos 12 meses</div></div>' +
+      '<div class="kpi"><div class="rot">Última venda nova</div><div class="val num">' + (ult ? dt(ult).slice(0, 5) : '–') + '</div><div class="sub">' + (ult ? 'há ' + ds + ' dias' : 'sem venda nova no período') + '</div></div>' +
+      '<div class="kpi"><div class="rot">Mensalidade média</div><div class="val num">' + (al.length ? reais(al.reduce(function (s, a) { return s + (a.valor || 0); }, 0) / al.length) : '–') + '</div><div class="sub">dos alunos ativos</div></div>' +
+      '</section><div style="height:16px"></div>' +
+      '<div class="cartao"><h2>Vendas novas por mês</h2>' + grafico(contarMeses(vs)) + '</div>' +
+      '<div class="cartao"><h2>Alunos ativos<small>' + n(al.length) + ' alunos</small></h2>' + tabela([
+        { t: 'Aluno', f: function (a) { return esc(a.nome); } },
+        { t: 'Celular', f: function (a) { return esc(a.cel || '–'); } },
+        { t: 'Unidade', f: function (a) { return esc(a.unidade); } },
+        { t: 'Plano', f: function (a) { return esc(a.plano); } },
+        { t: 'Mensalidade', n: 1, f: function (a) { return reais(a.valor); } },
+        { t: 'Desconto', n: 1, f: function (a) { return a.desconto ? reais(a.desconto) : '–'; } },
+        { t: 'Início', f: function (a) { return dt(a.inicio); } },
+        { t: 'Fim', f: function (a) { return dt(a.fim); } }
+      ], al) + '</div>' +
+      '<div class="cartao"><h2>Vendas novas<small>' + n(vs.length) + ' desde ' + dt(D.historicoDesde) + '</small></h2>' + tabelaVendas(vs) + '</div>';
+    $('voltar').onclick = function () { trocar(est.voltar || 'convenios'); };
+    $('csv').onclick = function () { baixarCsv(c.nome, al); };
+    ligarDicas();
+  }
+  function baixarCsv(nome, al) {
+    var linhas = [['Aluno', 'Celular', 'Unidade', 'Plano', 'Mensalidade', 'Desconto', 'Início', 'Fim', 'Convênio']].concat(al.map(function (a) {
+      return [a.nome, a.cel, a.unidade, a.plano, (a.valor || 0).toFixed(2).replace('.', ','), (a.desconto || 0).toFixed(2).replace('.', ','), dt(a.inicio), dt(a.fim), nome];
+    }));
+    var csv = '﻿' + linhas.map(function (l) { return l.map(function (x) { x = String(x == null ? '' : x); return /[;"\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; }).join(';'); }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'Alunos convênio ' + nome.replace(/[\\/:*?"<>|]/g, '') + '.csv';
+    a.click();
+  }
+
+  // ---------- interação
+  function ligarTabela() {
+    document.querySelectorAll('tr.clica').forEach(function (tr) {
+      tr.onclick = function () { est.voltar = est.aba; est.conv = tr.dataset.k; est.busca = ''; $('f-busca').value = ''; trocar('ficha'); };
+    });
+    document.querySelectorAll('th[data-campo]').forEach(function (th) {
+      if (!th.dataset.campo || est.aba !== 'convenios') return;
+      th.onclick = function () {
+        var c = th.dataset.campo;
+        est.ord = { campo: c, desc: est.ord.campo === c ? !est.ord.desc : c !== 'nome' };
+        abaConvenios();
+      };
+    });
+  }
+  function ligarDicas() {
+    var dica = $('dica');
+    document.querySelectorAll('[data-dica]').forEach(function (el) {
+      el.onmousemove = function (e) { dica.textContent = el.dataset.dica; dica.style.display = 'block'; dica.style.left = (e.clientX + 12) + 'px'; dica.style.top = (e.clientY - 34) + 'px'; };
+      el.onmouseleave = function () { dica.style.display = 'none'; };
+    });
+  }
+  function trocar(aba) {
+    est.aba = aba;
+    $('aba-ficha').hidden = aba !== 'ficha';
+    if (aba === 'ficha') $('aba-ficha').textContent = (D.convenios[est.conv] || {}).nome || 'Ficha';
+    document.querySelectorAll('#abas button').forEach(function (b) { b.classList.toggle('ativa', b.dataset.aba === aba); });
+    kpis();
+    ({ convenios: abaConvenios, vendas: abaVendas, parados: abaParados, ficha: abaFicha })[aba]();
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('#abas button').forEach(function (b) { b.onclick = function () { trocar(b.dataset.aba); }; });
+  $('f-unidade').onchange = function () { est.unidade = this.value; trocar(est.aba); };
+  var t;
+  $('f-busca').oninput = function () {
+    var v = this.value; clearTimeout(t);
+    t = setTimeout(function () {
+      est.busca = v.trim();
+      // buscou um nome de aluno? abre a ficha do convênio dele
+      if (est.busca.length >= 4 && est.aba !== 'ficha' && est.aba !== 'vendas' && !porConvenio(filtrados()).some(buscaConv)) {
+        var a = D.alunos.find(function (x) { return norm(x.nome).indexOf(norm(est.busca)) >= 0; });
+        if (a) { est.voltar = est.aba; est.conv = a.conv; trocar('ficha'); return; }
+      }
+      trocar(est.aba);
+    }, 250);
+  };
+  trocar('convenios');
+  // recarrega os dados a cada 30 min (o servidor atualiza de hora em hora)
+  setTimeout(function () { location.reload(); }, 30 * 60000);
+})();
+</script>
+</body>
+</html>

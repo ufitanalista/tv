@@ -1,0 +1,83 @@
+# Coleta GoVoice + EVO e publica as TVs no GitHub Pages, com os dados criptografados.
+# Horários em UTC (Brasília = UTC-3): a cada 5 min das 6h à meia-noite, a cada 30 min de madrugada.
+name: TVs
+on:
+  schedule:
+    - cron: '*/5 9-23,0-2 * * *'
+    - cron: '*/30 3-8 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: tvs
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    env:
+      TZ: America/Sao_Paulo
+      CHAVE_TV: ${{ secrets.CHAVE_TV }}
+      CHAVE_INTERNA: ${{ secrets.CHAVE_INTERNA }}
+      UFIT_CONFIG: /tmp/ufit/config
+      UFIT_ESTADO: /tmp/ufit/estado
+      UFIT_CREDENCIAIS: /tmp/ufit/cred
+      SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Abrir listas, estado e credenciais
+        env:
+          EVO_CRED: ${{ secrets.EVO_CRED }}
+          GOVOICE_CRED: ${{ secrets.GOVOICE_CRED }}
+        run: |
+          mkdir -p /tmp/ufit/cred /tmp/ufit/saida
+          node ferramentas/cripto.js desempacotar CHAVE_INTERNA config.enc "$UFIT_CONFIG"
+          t=$(date +%s)
+          if curl -fsS "$SITE_URL/estado.enc?t=$t" -o /tmp/ufit/estado.enc \
+             && node ferramentas/cripto.js desempacotar CHAVE_INTERNA /tmp/ufit/estado.enc "$UFIT_ESTADO"; then
+            echo "estado: última coleta"
+          else
+            node ferramentas/cripto.js desempacotar CHAVE_INTERNA estado-inicial.enc "$UFIT_ESTADO"
+            echo "estado: inicial"
+          fi
+          curl -fsS "$SITE_URL/conv.enc?t=$t" -o /tmp/ufit/conv-anterior.enc || echo "sem convênios anteriores"
+          printf '%s' "$EVO_CRED" > "$UFIT_CREDENCIAIS/evo-api-credentials.json"
+          printf '%s' "$GOVOICE_CRED" > "$UFIT_CREDENCIAIS/govoice-credentials.json"
+
+      - name: Coletar
+        working-directory: coletor
+        run: python3 rodar_nuvem.py /tmp/ufit/saida
+
+      - name: Montar o site (criptografado)
+        if: always()
+        run: |
+          rm -rf /tmp/ufit/cred
+          test -f /tmp/ufit/saida/dados.json || { echo "coleta falhou: o site anterior continua no ar"; exit 1; }
+          mkdir -p public
+          cp -r site/. public/
+          node ferramentas/cripto.js cifrar CHAVE_TV /tmp/ufit/saida/dados.json public/dados.enc
+          if [ -f /tmp/ufit/saida/conv.json ]; then
+            node ferramentas/cripto.js cifrar CHAVE_TV /tmp/ufit/saida/conv.json public/conv.enc
+          elif [ -s /tmp/ufit/conv-anterior.enc ]; then
+            cp /tmp/ufit/conv-anterior.enc public/conv.enc
+          fi
+          node ferramentas/cripto.js empacotar CHAVE_INTERNA "$UFIT_ESTADO" public/estado.enc
+          ls -la public
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - id: publicar
+        uses: actions/deploy-pages@v4

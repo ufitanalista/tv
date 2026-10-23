@@ -1,0 +1,104 @@
+/* Estilo comum às duas TVs. Tela desenhada em 1920x1080 e ajustada ao tamanho da TV. */
+:root {
+  --amarelo: #EEAE0E;
+  --preto: #100F0D;
+  --fundo: #0b0a09;
+  --cartao: #1a1917;
+  --cartao-2: #23221f;
+  --linha: #2e2d29;
+  --texto: #f0efec;
+  --texto-2: #c3c2b7;
+  --texto-3: #8f8e86;
+  --ligacao: #3987e5;
+  --livre: #0ca30c;
+  --pausa: #fab219;
+  --critico: #d03b3b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: var(--fundo); overflow: hidden; }
+body { font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif; color: var(--texto); }
+
+#palco {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform-origin: center center;
+  display: flex; flex-direction: column;
+  padding: 28px 40px 22px;
+  gap: 22px;
+}
+
+/* Cabeçalho */
+.topo { display: flex; align-items: center; gap: 28px; height: 70px; flex: none; }
+.topo img { height: 62px; }
+.topo h1 { font-size: 40px; font-weight: 800; letter-spacing: .5px; }
+.topo h1 span { color: var(--amarelo); }
+.topo .direita { margin-left: auto; display: flex; align-items: center; gap: 26px; }
+.relogio { font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.data { font-size: 22px; color: var(--texto-2); text-align: right; line-height: 1.2; }
+.selo-exemplo {
+  background: var(--critico); color: #fff; font-weight: 800; font-size: 18px;
+  padding: 8px 14px; border-radius: 8px; letter-spacing: 1px;
+}
+.atualizado { font-size: 18px; color: var(--texto-3); }
+
+/* Números grandes */
+.numeros { display: grid; gap: 18px; flex: none; }
+.numero {
+  background: var(--cartao); border-radius: 16px; padding: 18px 24px;
+  border-top: 6px solid var(--linha);
+}
+.numero .rot { font-size: 21px; color: var(--texto-2); font-weight: 600; text-transform: uppercase; letter-spacing: .6px; }
+.numero .val { font-size: 64px; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.numero .sub { font-size: 20px; color: var(--texto-2); margin-top: 2px; }
+
+/* Etiqueta de status */
+.status { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; }
+.status i { width: 18px; height: 18px; border-radius: 50%; display: inline-block; flex: none; }
+.st-em_ligacao i { background: var(--ligacao); }
+.st-livre i { background: var(--livre); }
+.st-pausa i { background: var(--pausa); }
+.st-pausa_longa i { background: var(--critico); animation: pisca 1.2s infinite; }
+.st-offline i { background: var(--texto-3); }
+.st-offline { color: var(--texto-3); }
+@keyframes pisca { 50% { opacity: .25; } }
+
+/* Telas que alternam */
+.telas { position: relative; flex: 1; min-height: 0; }
+.tela { position: absolute; inset: 0; opacity: 0; transition: opacity .8s; display: flex; flex-direction: column; gap: 18px; }
+.tela.ativa { opacity: 1; }
+.titulo-tela { display: flex; align-items: baseline; gap: 20px; flex: none; }
+.titulo-tela h2 { font-size: 38px; font-weight: 800; }
+.titulo-tela .obs { font-size: 22px; color: var(--texto-2); }
+
+.campanhas { display: flex; flex-wrap: wrap; gap: 10px; }
+.campanha {
+  font-size: 19px; font-weight: 600; color: var(--texto); background: var(--cartao-2);
+  border: 1px solid var(--linha); padding: 6px 14px; border-radius: 999px;
+}
+.campanha::before { content: '📞 '; }
+
+/* Barra empilhada das tabulações (2px de espaço entre os pedaços) */
+.pilha { display: flex; gap: 2px; height: 100%; width: 100%; }
+.pilha div {
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #0b0a09; overflow: hidden; white-space: nowrap;
+}
+.pilha div:first-child { border-radius: 6px 0 0 6px; }
+.pilha div:last-child { border-radius: 0 6px 6px 0; }
+.pilha div:only-child { border-radius: 6px; }
+.pilha .g-neg, .pilha .g-imp { color: #fff; }
+
+.legenda { display: flex; gap: 30px; font-size: 22px; color: var(--texto-2); font-weight: 600; }
+.legenda span { display: inline-flex; align-items: center; gap: 10px; }
+.legenda b { width: 30px; height: 30px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: #0b0a09; font-size: 18px; }
+
+/* Rodapé com indicador de tela */
+.rodape { display: flex; align-items: center; gap: 18px; height: 34px; flex: none; }
+.pontos { display: flex; gap: 10px; }
+.pontos span { width: 14px; height: 14px; border-radius: 50%; background: var(--linha); }
+.pontos span.ativo { background: var(--amarelo); }
+.nome-tela { font-size: 20px; color: var(--texto-2); font-weight: 600; }
+.progresso { flex: 1; height: 6px; background: var(--cartao-2); border-radius: 3px; overflow: hidden; }
+.progresso div { height: 100%; width: 0; background: var(--amarelo); }
+
+.num { font-variant-numeric: tabular-nums; }

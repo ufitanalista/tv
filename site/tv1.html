@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Call Center Ao Vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tv.css">
+<style>
+  .numeros { grid-template-columns: repeat(7, 1fr); }
+  .n-logados { border-top-color: var(--amarelo); }
+  .n-ligacao { border-top-color: var(--ligacao); }
+  .n-pausa { border-top-color: var(--pausa); }
+  .n-livre { border-top-color: var(--livre); }
+
+  /* Visão geral: cartão por operador */
+  .grade { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; flex: 1; min-height: 0; align-content: start; }
+  .grade.compacta { grid-template-columns: repeat(6, 1fr); gap: 14px; }
+  .grade.grande { grid-template-columns: repeat(3, 1fr); gap: 22px; align-content: start; }
+  .grade.grande .op { padding: 22px 30px; gap: 12px; }
+  .grade.grande .op .nome { font-size: 48px; }
+  .grade.grande .op .eq { font-size: 22px; }
+  .grade.grande .op .status { font-size: 32px; }
+  .grade.grande .op .status i { width: 24px; height: 24px; }
+  .grade.grande .op .mini b { font-size: 42px; }
+  .grade.grande .op .mini span { font-size: 18px; }
+  .op { background: var(--cartao); border-radius: 16px; padding: 20px 22px; border-left: 10px solid var(--linha); display: flex; flex-direction: column; gap: 10px; }
+  .op.st-em_ligacao { border-left-color: var(--ligacao); }
+  .op.st-livre { border-left-color: var(--livre); }
+  .op.st-pausa { border-left-color: var(--pausa); }
+  .op.st-pausa_longa { border-left-color: var(--critico); background: #2a1514; }
+  .op .nome { font-size: 36px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .op .eq { font-size: 18px; color: var(--texto-3); font-weight: 600; margin-top: -8px; }
+  .op .status { font-size: 24px; }
+  .op .status em { font-style: normal; color: var(--texto-2); font-weight: 600; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .op .linha-st { display: flex; align-items: center; }
+  .op .mini { display: flex; gap: 10px; margin-top: auto; }
+  .op .mini div { flex: 1; background: var(--cartao-2); border-radius: 10px; padding: 8px 10px; }
+  .op .mini b { display: block; font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .op .mini span { font-size: 15px; color: var(--texto-2); font-weight: 600; text-transform: uppercase; }
+  .op .mini .venda b { color: var(--amarelo); }
+
+  /* Tabulação por equipe */
+  .equipes { display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
+  .eq-linha { background: var(--cartao); border-radius: 16px; padding: 10px 24px; display: grid; grid-template-columns: 700px 1fr; gap: 28px; align-items: center; flex: 1 1 0; min-height: 0; }
+  .eq-linha.total { background: var(--cartao-2); flex: 0.8; }
+  .eq-linha h3 { font-size: 30px; font-weight: 800; line-height: 1.1; }
+  .eq-linha .at { font-size: 21px; color: var(--texto-2); margin: 0 0 6px; }
+  .eq-linha .campanha { font-size: 17px; padding: 4px 12px; }
+  .eq-linha .campanhas { gap: 8px; }
+  .eq-linha .at b { color: var(--texto); }
+  .eq-barra { display: flex; flex-direction: column; gap: 8px; height: 100%; justify-content: center; }
+  .eq-barra .pilha { height: 56px; font-size: 26px; }
+
+  /* Tela de uma equipe */
+  .cab-equipe { display: flex; align-items: center; gap: 28px; flex: none; }
+  .cab-equipe h2 { font-size: 44px; font-weight: 800; }
+  .cab-equipe .resumo { margin-left: auto; display: flex; gap: 14px; }
+  .cab-equipe .resumo div { background: var(--cartao); border-radius: 12px; padding: 8px 18px; text-align: center; }
+  .cab-equipe .resumo b { display: block; font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .cab-equipe .resumo span { font-size: 16px; color: var(--texto-2); font-weight: 600; text-transform: uppercase; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+  th { font-size: 18px; color: var(--texto-2); font-weight: 700; text-transform: uppercase; text-align: center; padding: 0 8px 4px; vertical-align: bottom; line-height: 1.15; }
+  th:first-child { text-align: left; }
+  th .g { display: block; height: 6px; border-radius: 3px; margin-bottom: 8px; }
+  td { background: var(--cartao); font-size: 30px; font-weight: 700; text-align: center; padding: 14px 8px; font-variant-numeric: tabular-nums; }
+  td:first-child { border-radius: 12px 0 0 12px; text-align: left; padding-left: 22px; font-size: 32px; font-weight: 800; }
+  td:last-child { border-radius: 0 12px 12px 0; }
+  td.zero { color: var(--texto-3); font-weight: 500; }
+  td .status { font-size: 22px; white-space: nowrap; }
+  td.venda { color: var(--amarelo); font-size: 36px; font-weight: 800; }
+  td.dist { width: 300px; padding-right: 18px; }
+  td.dist .pilha { height: 30px; }
+  tr.st-pausa_longa td { background: #2a1514; }
+  .vazio { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: var(--cartao); border-radius: 16px; font-size: 48px; font-weight: 800; color: var(--texto-2); text-align: center; padding: 30px; }
+  .vazio small { font-size: 24px; font-weight: 600; color: var(--texto-3); max-width: 1500px; line-height: 1.5; }
+  .campanha.pausada { color: var(--texto-3); border-style: dashed; }
+  .campanha.sem { color: var(--texto-3); }
+  .campanha.sem::before { content: ''; }
+</style>
+</head>
+<body>
+<div id="palco">
+  <div class="topo">
+    <img src="logo_ufit.png" alt="UFit">
+    <h1>CALL CENTER · <span>AO VIVO</span></h1>
+    <div class="direita">
+      <span class="selo-exemplo" id="selo" style="display:none">DADOS DE EXEMPLO</span>
+      <div class="data" id="data"></div>
+      <div class="relogio" id="relogio"></div>
+    </div>
+  </div>
+
+  <div class="numeros" id="numeros"></div>
+  <div class="telas" id="telas"></div>
+
+  <div class="rodape">
+    <div class="pontos" id="pontos"></div>
+    <div class="nome-tela" id="nome-tela"></div>
+    <div class="progresso"><div id="barra"></div></div>
+  </div>
+</div>
+
+<script src="cripto.js" data-arquivo="dados.enc" data-var="DADOS"></script>
+<script src="nosleep.min.js"></script>
+<script src="tv-comum.js"></script>
+<script type="text/plain" class="app">
+var SEGUNDOS_POR_TELA = 20;
+var PAUSA_LONGA_MIN = 15;     // pausa acima disso fica vermelha
+var MAX_COLUNAS_TABULACAO = 7; // na tela da equipe; o resto vira "Outras"
+
+var esc = TV.esc;
+function D() { return window.DADOS; }
+function soma(obj) { var t = 0; Object.keys(obj || {}).forEach(function (k) { t += obj[k]; }); return t; }
+
+// segundos no status: calculado pela hora do GoVoice; no exemplo, contado na tela
+function segStatus(o) {
+  return o.statusDesde ? Math.max(0, Math.round((Date.now() - new Date(o.statusDesde)) / 1000)) : (o.segundosNoStatus || 0);
+}
+function stDe(o) {
+  if (o.status === 'pausa' && segStatus(o) >= PAUSA_LONGA_MIN * 60) return 'pausa_longa';
+  return o.status;
+}
+function stTexto(o) {
+  return ({ em_ligacao: 'Em ligação', livre: 'Livre', pausa: 'Pausa', pausa_longa: 'Pausa', offline: 'Deslogado' }[stDe(o)] || o.status) + (o.pausa ? ' · ' + o.pausa : '');
+}
+function logados() { return D().operadores.filter(function (o) { return o.status !== 'offline'; }); }
+function grupoDe(nomeTab) {
+  var t = D().tabulacoes.find(function (x) { return x.nome === nomeTab; });
+  return t ? t.grupo : 'imp';
+}
+// tabulações (nome → quantidade) somadas por grupo
+function porGrupo(tabs) {
+  var r = {}; D().grupos.forEach(function (g) { r[g.id] = 0; });
+  Object.keys(tabs || {}).forEach(function (t) { r[grupoDe(t)] += tabs[t]; });
+  return r;
+}
+function somaTabs(lista) {
+  var r = {}; lista.forEach(function (tabs) { Object.keys(tabs || {}).forEach(function (t) { r[t] = (r[t] || 0) + tabs[t]; }); }); return r;
+}
+// equipe: membros e tabulações (formato real do GoVoice, com recuo para o exemplo)
+function membrosDe(eq) {
+  if (eq.membros) return D().operadores.filter(function (o) { return eq.membros.indexOf(o.ramal) >= 0; });
+  return D().operadores.filter(function (o) { return o.equipe === eq.nome; });
+}
+function tabMembro(eq, o) { return eq.tabPorMembro ? (eq.tabPorMembro[o.ramal] || {}) : o.tabulacoes; }
+function tabEquipe(eq) { return eq.tab || somaTabs(membrosDe(eq).map(function (o) { return o.tabulacoes; })); }
+function tabTodas() { return D().tabTotal || somaTabs(D().operadores.map(function (o) { return o.tabulacoes; })); }
+
+function pilha(contagem, comRotulo) {
+  var tot = soma(contagem);
+  if (!tot) return '<div class="pilha"><div style="flex:1;background:var(--cartao-2);color:var(--texto-3);font-weight:600">' + (comRotulo ? 'sem tabulações hoje' : '') + '</div></div>';
+  return '<div class="pilha">' + D().grupos.filter(function (g) { return contagem[g.id] > 0; }).map(function (g) {
+    var p = contagem[g.id] / tot * 100;
+    return '<div class="g-' + g.id + '" style="flex:' + contagem[g.id] + ';background:' + g.cor + '" title="' + esc(g.nome) + ': ' + contagem[g.id] + '">' +
+      (comRotulo && p >= 12 ? contagem[g.id] + ' · ' + Math.round(p) + '%' : comRotulo && p >= 5 ? Math.round(p) + '%' : '') + '</div>';
+  }).join('') + '</div>';
+}
+function legenda() {
+  return '<div class="legenda">' + D().grupos.map(function (g) {
+    return '<span><b style="background:' + g.cor + ';color:' + (g.id === 'neg' || g.id === 'imp' ? '#fff' : '#0b0a09') + '">' + g.icone + '</b>' + esc(g.nome) + '</span>';
+  }).join('') + '</div>';
+}
+function campanhas(eq) {
+  if (!eq.campanhas.length) return '<div class="campanhas"><span class="campanha sem">sem campanha</span></div>';
+  return '<div class="campanhas">' + eq.campanhas.map(function (c) {
+    if (typeof c === 'string') return '<span class="campanha">' + esc(c) + '</span>';
+    var pausada = c.status && c.status !== 'ACTIVE';
+    return '<span class="campanha' + (pausada ? ' pausada' : '') + '">' + esc(c.nome) + (pausada ? ' · pausada' : '') + '</span>';
+  }).join('') + '</div>';
+}
+
+// ---------- Números do topo (sempre visíveis) ----------
+function renderNumeros() {
+  var ops = D().operadores, on = logados();
+  var c = function (f) { return on.filter(f).length; };
+  var disc = 0, at = 0, tmaSoma = 0;
+  ops.forEach(function (o) { disc += o.discadas || 0; at += o.atendidas; tmaSoma += o.tmaSeg * o.atendidas; });
+  if (D().totais) { disc = D().totais.discadas; }
+  var longa = c(function (o) { return stDe(o) === 'pausa_longa'; });
+  var itens = [
+    ['n-logados', 'Logados', on.length, 'de ' + ops.length + ' operadores'],
+    ['n-ligacao', 'Em ligação', c(function (o) { return o.status === 'em_ligacao'; }), ''],
+    ['n-pausa', 'Em pausa', c(function (o) { return o.status === 'pausa'; }), longa ? '<span style="color:var(--critico);font-weight:700">' + longa + ' acima de ' + PAUSA_LONGA_MIN + ' min</span>' : ''],
+    ['n-livre', 'Livres', c(function (o) { return o.status === 'livre'; }), ''],
+    ['', 'Discadas hoje', disc.toLocaleString('pt-BR'), ''],
+    ['', 'Atendidas hoje', at.toLocaleString('pt-BR'), 'pelos operadores'],
+    ['', 'Tempo médio', at ? TV.tempo(Math.round(tmaSoma / at)) : '—', 'por ligação atendida']
+  ];
+  document.getElementById('numeros').innerHTML = itens.map(function (i) {
+    return '<div class="numero ' + i[0] + '"><div class="rot">' + i[1] + '</div><div class="val">' + i[2] + '</div><div class="sub">' + (i[3] || '&nbsp;') + '</div></div>';
+  }).join('');
+}
+
+// ---------- Telas que alternam ----------
+function telaGeral() {
+  var ops = logados().sort(function (a, b) {
+    var ordem = { pausa_longa: 0, em_ligacao: 1, livre: 2, pausa: 3 };
+    return ordem[stDe(a)] - ordem[stDe(b)] || a.govoice.localeCompare(b.govoice);
+  });
+  var tit = '<div class="titulo-tela"><h2>Operadores agora</h2><span class="obs">ordenados por status · pausa longa primeiro</span></div>';
+  if (!ops.length) {
+    return tit + '<div class="vazio">Nenhum operador logado agora<small>' +
+      D().operadores.map(function (o) { return esc(o.govoice) + ': ' + o.atendidas + ' atendidas hoje'; }).join(' · ') + '</small></div>';
+  }
+  return tit + '<div class="grade' + (ops.length > 10 ? ' compacta' : ops.length <= 6 ? ' grande' : '') + '">' + ops.map(function (o) {
+      var st = stDe(o);
+      return '<div class="op st-' + st + '"><div class="nome">' + esc(o.govoice) + '</div><div class="eq">' + esc(o.equipe) + '</div>' +
+        '<div class="linha-st status st-' + st + '"><i></i>' + esc(stTexto(o)) + '<em>' + TV.tempo(segStatus(o)) + '</em></div>' +
+        '<div class="mini"><div><b>' + o.atendidas + '</b><span>Atendidas</span></div><div class="venda"><b>' + o.vendasHoje.qtd + '</b><span>Vendas hoje</span></div></div></div>';
+    }).join('') + '</div>';
+}
+
+function telaTabEquipes() {
+  function linha(titulo, sub, tabs, nOps, classe) {
+    return '<div class="eq-linha ' + (classe || '') + '"><div><h3>' + esc(titulo) + '</h3><div class="at"><b>' + soma(tabs) + '</b> tabuladas · ' + nOps + ' operadores</div>' + sub + '</div>' +
+      '<div class="eq-barra">' + pilha(porGrupo(tabs), true) + '</div></div>';
+  }
+  return '<div class="titulo-tela"><h2>Tabulações de hoje por equipe</h2>' + legenda() + '</div>' +
+    '<div class="equipes">' + linha('Todas as equipes', '', tabTodas(), D().operadores.length, 'total') +
+    D().equipes.map(function (eq) { return linha(eq.nome, campanhas(eq), tabEquipe(eq), membrosDe(eq).length); }).join('') + '</div>';
+}
+
+function telaEquipe(eq) {
+  // na equipe aparece quem está logado ou já tabulou nela hoje
+  var ops = membrosDe(eq).filter(function (o) { return o.status !== 'offline' || soma(tabMembro(eq, o)) > 0; });
+  var tabsEq = tabEquipe(eq);
+  var ordemG = D().grupos.map(function (g) { return g.id; });
+  var usadas = Object.keys(tabsEq).filter(function (t) { return tabsEq[t] > 0; }).sort(function (a, b) { return tabsEq[b] - tabsEq[a]; });
+  var colunas = usadas.slice(0, MAX_COLUNAS_TABULACAO).sort(function (a, b) { return ordemG.indexOf(grupoDe(a)) - ordemG.indexOf(grupoDe(b)) || tabsEq[b] - tabsEq[a]; });
+  var outras = usadas.slice(MAX_COLUNAS_TABULACAO);
+  var corDe = function (t) { return D().grupos.find(function (g) { return g.id === grupoDe(t); }).cor; };
+
+  var vend = 0, g = porGrupo(tabsEq), tot = soma(tabsEq);
+  ops.forEach(function (o) { vend += o.vendasHoje.qtd; });
+
+  var cab = '<div class="cab-equipe"><h2>' + esc(eq.nome) + '</h2>' + campanhas(eq) +
+    '<div class="resumo"><div><b>' + tot + '</b><span>Tabuladas</span></div><div><b style="color:var(--livre)">' + (tot ? Math.round(g.pos / tot * 100) : 0) + '%</b><span>Positivas</span></div><div><b style="color:var(--amarelo)">' + vend + '</b><span>Vendas hoje</span></div></div></div>';
+  if (!ops.length) return cab + '<div class="vazio">Sem operadores logados nem ligações nesta equipe hoje</div>';
+
+  var th = '<tr><th>Consultor</th><th>Status</th><th>Tabul.</th>' +
+    colunas.map(function (t) { return '<th><span class="g" style="background:' + corDe(t) + '"></span>' + esc(t) + '</th>'; }).join('') +
+    (outras.length ? '<th><span class="g" style="background:var(--texto-3)"></span>Outras</th>' : '') +
+    '<th>Distribuição</th><th>Vendas<br>hoje</th></tr>';
+  var corpo = ops.slice().sort(function (a, b) { return b.vendasHoje.qtd - a.vendasHoje.qtd || soma(tabMembro(eq, b)) - soma(tabMembro(eq, a)); }).map(function (o) {
+    var st = stDe(o), tm = tabMembro(eq, o);
+    var cel = function (v) { return '<td class="' + (v ? '' : 'zero') + '">' + v + '</td>'; };
+    var out = 0; outras.forEach(function (t) { out += tm[t] || 0; });
+    return '<tr class="st-' + st + '"><td>' + esc(o.govoice) + '</td><td><span class="status st-' + st + '"><i></i>' + esc(stTexto(o).split(' · ')[0]) + '</span></td><td>' + soma(tm) + '</td>' +
+      colunas.map(function (t) { return cel(tm[t] || 0); }).join('') + (outras.length ? cel(out) : '') +
+      '<td class="dist">' + pilha(porGrupo(tm), false) + '</td><td class="venda">' + o.vendasHoje.qtd + '</td></tr>';
+  }).join('');
+  return cab + legenda() + '<table>' + th + corpo + '</table>';
+}
+
+// monta as caixas das telas uma vez; o conteúdo é atualizado a cada segundo
+function montarTelas() {
+  var nomes = ['Operadores agora', 'Tabulações por equipe'].concat(D().equipes.map(function (e) { return e.nome; }));
+  var t = document.getElementById('telas');
+  var atual = Array.prototype.map.call(t.children, function (c) { return c.dataset.nome; }).join('|');
+  if (atual !== nomes.join('|')) {
+    t.innerHTML = nomes.map(function (n) { return '<div class="tela" data-nome="' + esc(n) + '"></div>'; }).join('');
+  }
+}
+function renderTelas() {
+  montarTelas();
+  var telas = document.querySelectorAll('.tela');
+  telas[0].innerHTML = telaGeral();
+  telas[1].innerHTML = telaTabEquipes();
+  D().equipes.forEach(function (eq, i) { telas[i + 2].innerHTML = telaEquipe(eq); });
+}
+function render() { renderNumeros(); renderTelas(); }
+
+// atualiza os cronômetros a cada segundo (no exemplo, conta na própria tela)
+setInterval(function () {
+  if (D().exemplo) D().operadores.forEach(function (o) { o.segundosNoStatus++; });
+  render();
+}, 1000);
+
+// só no exemplo: simula a operação mudando, para ver a tela "viva"
+if (D().exemplo) {
+  setInterval(function () {
+    var ops = D().operadores, o = ops[Math.floor(Math.random() * ops.length)];
+    if (o.status === 'em_ligacao') {
+      o.atendidas++; o.discadas += 3;
+      var t = D().tabulacoes[Math.floor(Math.random() * D().tabulacoes.length)];
+      o.tabulacoes[t.nome] = (o.tabulacoes[t.nome] || 0) + 1;
+      o.status = 'livre';
+    } else if (o.status === 'livre') { o.status = 'em_ligacao'; }
+    else if (o.segundosNoStatus > 400 && o.segundosNoStatus < 900) { o.status = 'livre'; o.pausa = null; }
+    else return;
+    o.segundosNoStatus = 0;
+  }, 2500);
+}
+
+TV.iniciar();
+render();
+TV.rodizio(SEGUNDOS_POR_TELA);
+TV.recarregar(30, render);
+</script>
+</body>
+</html>

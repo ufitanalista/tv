@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balcão UFit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: trilho de unidades à esquerda (vira faixa no celular) + ficha da unidade em três blocos: identidade, vídeo e planos, grade de aulas. */
+:root {
+  --bg: #f3f2ee;
+  --surface: #ffffff;
+  --ink: #17171a;
+  --muted: #5d5c57;
+  --line: #dddbd3;
+  --brand: #ffcf00;        /* amarelo UFit */
+  --brand-ink: #17171a;    /* texto sobre o amarelo */
+  --brand-soft: #fff4c2;
+  --rail: #17171a;
+  --rail-ink: #f3f2ee;
+  --rail-muted: #9a9890;
+  --vip: #6b4fd8;
+  --vip-soft: #ece8fb;
+  --ok: #1d7a46;
+  --warn: #9a5b00;
+  --warn-soft: #fff1d6;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121214; --surface: #1c1c20; --ink: #f1efe8; --muted: #a6a49c; --line: #2f2f35;
+    --brand: #ffd21a; --brand-ink: #121214; --brand-soft: #3a3210;
+    --rail: #0b0b0d; --rail-ink: #f1efe8; --rail-muted: #8d8b84;
+    --vip: #a996ff; --vip-soft: #2a2442; --ok: #5cc98c; --warn: #f0b85a; --warn-soft: #3a2a0d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121214; --surface: #1c1c20; --ink: #f1efe8; --muted: #a6a49c; --line: #2f2f35;
+  --brand: #ffd21a; --brand-ink: #121214; --brand-soft: #3a3210;
+  --rail: #0b0b0d; --rail-ink: #f1efe8; --rail-muted: #8d8b84;
+  --vip: #a996ff; --vip-soft: #2a2442; --ok: #5cc98c; --warn: #f0b85a; --warn-soft: #3a2a0d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100%; }
+
+/* trilho */
+.rail { background: var(--rail); color: var(--rail-ink); padding-block: 20px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.marca { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 30px; letter-spacing: .01em; line-height: 1; }
+.marca b { color: var(--brand); font-weight: 800; }
+.marca small { display: block; font-family: var(--body); font-style: normal; font-weight: 600; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--rail-muted); margin-top: 6px; }
+.busca { width: 100%; border: 1px solid #3a3a40; background: #232328; color: var(--rail-ink); border-radius: 8px; padding: 10px 12px; font: inherit; }
+.busca::placeholder { color: var(--rail-muted); }
+.lista { display: flex; flex-direction: column; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.uni { width: 100%; text-align: left; border: 0; background: transparent; color: var(--rail-ink); padding: 10px 12px; border-radius: 8px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.uni:hover { background: #26262b; }
+.uni[aria-current="true"] { background: var(--brand); color: var(--brand-ink); }
+.uni .n { font-family: var(--display); font-weight: 600; font-size: 20px; line-height: 1.1; text-transform: uppercase; }
+.uni .c { grid-column: 1; font-size: 12px; color: var(--rail-muted); }
+.uni[aria-current="true"] .c { color: inherit; opacity: .75; }
+.uni .k { grid-row: 1 / span 2; grid-column: 2; font-size: 10px; font-weight: 700; letter-spacing: .1em; border: 1px solid currentColor; border-radius: 4px; padding: 1px 5px; opacity: .8; }
+.uni .hit { grid-column: 1 / -1; font-size: 12px; color: var(--brand); }
+.uni[aria-current="true"] .hit { color: inherit; }
+.vazio-busca { color: var(--rail-muted); font-size: 13px; }
+.rodape-rail { margin-top: auto; font-size: 12px; color: var(--rail-muted); }
+
+/* ficha */
+main { min-width: 0; padding-block: 24px 48px; padding-left: max(16px, 2.5vw); padding-right: max(16px, env(safe-area-inset-right, 0px), 2.5vw); display: flex; flex-direction: column; gap: 22px; }
+.topo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 28px; align-items: end; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 800; font-style: italic; text-transform: uppercase; font-size: clamp(40px, 6vw, 68px); line-height: .92; margin: 4px 0 0; text-wrap: balance; }
+.selos { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.selo { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); }
+.selo.cat-PADRAO { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.selo.cat-PREMIUM { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+.selo.cat-CT { background: var(--vip); color: #fff; border-color: var(--vip); }
+.selo.cat-PREVENDA { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.fatos { display: grid; grid-template-columns: repeat(3, auto); gap: 4px 22px; font-variant-numeric: tabular-nums; }
+.fato dt { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.fato dd { margin: 0; font-family: var(--display); font-weight: 600; font-size: 26px; line-height: 1.1; }
+
+.faixa { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.faixa > div { padding: 14px 16px; min-width: 0; }
+.faixa > div + div { border-left: 1px solid var(--line); }
+.faixa h3 { margin: 0 0 4px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.faixa p { margin: 0; }
+.faixa .sub { color: var(--muted); font-size: 13px; }
+.copiavel { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0; cursor: pointer; font-weight: 600; text-decoration: underline dotted; text-underline-offset: 3px; }
+.inaug.tem { background: var(--warn-soft); }
+.inaug.tem strong { color: var(--warn); }
+
+.meio { display: grid; grid-template-columns: minmax(240px, 340px) minmax(0, 1fr); gap: 22px; align-items: start; }
+.video { background: #000; border-radius: 10px; overflow: hidden; position: sticky; top: 16px; }
+.video video { display: block; width: 100%; max-height: 72vh; background: #000; }
+.video .semvideo { aspect-ratio: 9 / 12; max-width: 100%; display: grid; place-content: center; text-align: center; gap: 6px; color: #b9b7af; padding: 24px; background: repeating-linear-gradient(135deg, #1a1a1d 0 14px, #141416 14px 28px); }
+.video .semvideo strong { font-family: var(--display); font-size: 22px; text-transform: uppercase; color: #f1efe8; }
+
+h2 { font-family: var(--display); font-weight: 800; font-style: italic; text-transform: uppercase; font-size: 30px; line-height: 1; margin: 0; }
+.cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.cab .nota { font-size: 12px; color: var(--muted); }
+
+.planos { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.plano { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.plano.VIP { border-top: 4px solid var(--vip); }
+.plano.FIT { border-top: 4px solid var(--brand); }
+.plano .nome { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.plano .nome strong { font-family: var(--display); font-weight: 600; font-size: 21px; text-transform: uppercase; line-height: 1.05; }
+.tag { font-size: 10px; font-weight: 700; letter-spacing: .1em; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+.tag.recorrente { background: var(--brand-soft); color: var(--ink); }
+.tag.fidelidade { background: var(--vip-soft); color: var(--vip); }
+.preco { font-variant-numeric: tabular-nums; }
+.preco .grande { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; }
+.preco .grande small { font-size: 16px; font-weight: 600; }
+.preco .det { font-size: 13px; color: var(--muted); }
+.arg { margin: 0; font-size: 13.5px; }
+.plano ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13.5px; }
+.plano li::before { content: "✓"; color: var(--ok); font-weight: 700; margin-right: 6px; }
+.acoes { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 6px; padding: 7px 12px; font-weight: 600; font-size: 13px; cursor: pointer; }
+.btn:hover { background: transparent; color: var(--ink); }
+.btn.sec { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.sec:hover { border-color: var(--ink); }
+.semlink { font-size: 12px; color: var(--muted); }
+.plano.faltando { border-style: dashed; color: var(--muted); }
+
+/* barra de atendimento: quem é o consultor e qual voucher da campanha */
+.previa { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+.barra { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.barra label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); min-width: 0; }
+.barra select { font: inherit; font-size: 15px; letter-spacing: 0; text-transform: none; font-weight: 600; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 200px; max-width: 100%; }
+.barra .info { font-size: 13px; color: var(--muted); flex: 1 1 220px; }
+.barra .info strong { color: var(--ink); }
+.preco .de { font-size: 14px; color: var(--muted); text-decoration: line-through; }
+.desc { align-self: flex-start; background: var(--ok); color: #fff; font-weight: 700; font-size: 13px; padding: 3px 9px; border-radius: 999px; }
+.cond { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ok); }
+.naovale { margin: 0; font-size: 12.5px; color: var(--warn); }
+@media (max-width: 760px) { .barra select { min-width: 0; width: 100%; } .barra label { flex: 1 1 100%; } }
+
+.aulas { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.mods { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.mod { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 11px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.mod[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.tabela { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 8px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+thead th.hoje { color: var(--ink); background: var(--brand-soft); }
+td.hoje { background: color-mix(in srgb, var(--brand-soft) 55%, transparent); }
+td.hora { font-family: var(--display); font-weight: 600; font-size: 17px; width: 64px; white-space: nowrap; }
+td .vip { color: var(--vip); font-weight: 600; }
+td.match { box-shadow: inset 0 0 0 2px var(--brand); font-weight: 700; }
+tr.apagada td:not(.hora) { opacity: .28; }
+.obs { font-size: 12px; color: var(--warn); margin: 8px 0 0; }
+
+.avisos { border: 1px dashed var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--muted); }
+.avisos summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+
+dialog { border: 0; padding: 0; background: transparent; max-width: min(92vw, 720px); }
+dialog::backdrop { background: rgba(0,0,0,.75); }
+dialog img { display: block; max-height: 86vh; width: auto; margin: 0 auto; border-radius: 8px; }
+dialog .fechar { position: absolute; top: 8px; right: 8px; }
+
+.logado { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #232328; border: 1px solid #3a3a40; border-radius: 8px; padding: 8px 10px 8px 12px; }
+.logado span { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--rail-muted); }
+.logado strong { display: block; font-size: 16px; letter-spacing: 0; text-transform: none; color: var(--rail-ink); }
+.logado button { border: 1px solid #3a3a40; background: transparent; color: var(--rail-ink); border-radius: 6px; padding: 5px 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.logado button:hover { border-color: var(--brand); color: var(--brand); }
+
+/* tela inicial: o operador escolhe quem é antes de usar o painel */
+.entrada { position: fixed; inset: 0; z-index: 30; background: var(--rail); color: var(--rail-ink); display: grid; place-items: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.entrada[hidden] { display: none; }
+.entrada .caixa { width: min(560px, 100%); display: flex; flex-direction: column; gap: 22px; }
+.entrada h1 { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1.05; margin: 0; }
+.entrada p { margin: 0; color: var(--rail-muted); }
+.pessoas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pessoa { border: 1px solid #3a3a40; background: #232328; color: var(--rail-ink); border-radius: 10px; padding: 18px 14px; font-size: 18px; font-weight: 700; cursor: pointer; text-align: left; }
+.pessoa:hover, .pessoa:focus-visible { border-color: var(--brand); background: #2b2a22; }
+.pessoa.atual { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 20; }
+
+@media (max-width: 1100px) {
+  .meio { grid-template-columns: minmax(0, 1fr); }
+  .video { position: static; max-width: 420px; }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .rail { position: static; height: auto; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .lista { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+  .uni { width: auto; min-width: 150px; }
+  .rodape-rail { display: none; }
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .topo { grid-template-columns: minmax(0, 1fr); }
+  .faixa { grid-template-columns: minmax(0, 1fr); }
+  .faixa > div + div { border-left: 0; border-top: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ficha-anim { animation: entra .22s ease-out; }
+  @keyframes entra { from { transform: translateY(6px); } to { transform: none; } }
+}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="marca"><b>U</b>FIT<small>Central de atendimento</small></div>
+    <div class="logado" id="logado"></div>
+    <input id="busca" class="busca" type="search" placeholder="Unidade, cidade ou aula" aria-label="Buscar unidade, cidade ou aula" autocomplete="off">
+    <ul id="lista" class="lista" aria-label="Unidades"></ul>
+    <p id="vaziobusca" class="vazio-busca" hidden>Nenhuma unidade encontrada.</p>
+    <div class="rodape-rail" id="rodape"></div>
+  </aside>
+  <main id="ficha"></main>
+</div>
+
+<dialog id="cartaz" aria-label="Cartaz da grade de aulas">
+  <button class="btn fechar" id="fecharCartaz">Fechar</button>
+  <img id="cartazImg" alt="">
+</dialog>
+<section id="entrada" class="entrada" aria-label="Quem está atendendo" hidden>
+  <div class="caixa">
+    <div class="marca"><b>U</b>FIT<small>Central de atendimento</small></div>
+    <div><h1>Quem está atendendo?</h1><p>Os links de checkout saem com a sua página de vendas, para a venda cair na sua comissão.</p></div>
+    <div class="pessoas" id="pessoas"></div>
+  </div>
+</section>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="cripto.js" data-arquivo="balcao.enc" data-var="BALCAO"></script>
+<script type="text/plain" class="app">
+const DADOS = window.BALCAO;
+const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
+const CAT = { PADRAO: "Padrão", PREMIUM: "Premium", CT: "CT", PREVENDA: "Pré-venda" };
+const PLANO = Object.fromEntries(DADOS.planos.map(p => [p.chave, p]));
+const brl = v => v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const dataBR = s => s ? s.split("-").reverse().join("/") : "—";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function ler(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+let atual = ler("painel-unidade") || DADOS.unidades[0].slug;
+if (!DADOS.unidades.some(u => u.slug === atual)) atual = DADOS.unidades[0].slug;
+let filtroAula = null;
+let consultor = ler("painel-consultor") || "";
+if (!DADOS.operadores.some(o => o.chave === consultor)) consultor = "";
+// abre com o voucher da campanha; "Sem voucher" escolhido fica guardado
+const CODIGOS = DADOS.unidades.flatMap(u => (u.vouchers || []).map(v => v.codigo));
+let voucher = ler("painel-voucher");
+if (voucher === null || (voucher && !CODIGOS.includes(voucher))) voucher = CODIGOS[0] || "";
+
+// desconto do voucher sobre o contrato, como o checkout do EVO calcula (Value = reais, percentage = %)
+function comVoucher(pl, v) {
+  const r = v && v.regras[pl.chave];
+  if (!r) return null;
+  const desc = Math.min(pl.valor, r.tipo === "percentage" ? pl.valor * r.valor / 100 : r.valor);
+  return { desc, novo: Math.round((pl.valor - desc) * 100) / 100, meses: r.meses };
+}
+
+function voucherAtual(u) { return (u.vouchers || []).find(v => v.codigo === voucher) || null; }
+
+function linkCheckout(u, pl) {
+  const token = u.paginas && u.paginas[consultor];
+  if (!token) return null;
+  const v = voucherAtual(u);
+  return `https://evo-totem.w12app.com.br/UFITACADEMIA/${u.idBranch}/site/landing-page/${token}/checkout/${pl.idMembership}/0` + (v && v.regras[pl.chave] ? `/${encodeURIComponent(v.regras[pl.chave].codigo || v.codigo)}` : "");
+}
+
+function modalidades(u) {
+  const s = new Set();
+  u.grade.grade.forEach(l => l.slice(1).forEach(c => c && c.split("/").forEach(x => s.add(x.trim().replace(/\s*\(.*\)$/, "")))));
+  return [...s].sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+// Anual e semestral: preço cheio riscado + % sobre o contrato (arredondado para baixo); a matrícula é cobrada à parte,
+// a não ser no voucher "sem matrícula", que zera a matrícula no checkout.
+// Recorrente: sem %, mostra a condição de entrada: a promoção do próprio plano ou, com voucher, a do voucher
+// (no EVO o voucher substitui a promoção do plano, não soma).
+function precoInfo(u, pl) {
+  const def = PLANO[pl.chave];
+  const vc = comVoucher(pl, voucherAtual(u));
+  const isenta = !!(vc && voucherAtual(u).semMatricula);
+  const mat = isenta ? 0 : pl.matricula || 0;
+  if (def.tipo === "recorrente") {
+    const base = { grande: `${brl(pl.valor)}<small>/mês</small>`, det: pl.matricula ? `Matrícula ${brl(pl.matricula)}` : "Sem matrícula cadastrada no EVO", texto: `${brl(pl.valor)} por mês` };
+    const pr = pl.promo;
+    if (!vc && pr && pr.valor && pr.valor < pl.valor) {
+      const quando = pr.meses > 1 ? `${pr.meses} primeiras mensalidades` : "1ª mensalidade";
+      const cond = `${quando} por ${brl(pr.valor)}, depois ${brl(pl.valor)}/mês`;
+      return { ...base, grande: `${brl(pr.valor)}<small>${pr.meses > 1 ? "/mês" : " na 1ª"}</small>`, de: `${brl(pl.valor)}/mês`, cond, texto: cond };
+    }
+    if (!vc) return base;
+    const quando = vc.meses === 1 ? "1ª mensalidade" : vc.meses ? `${vc.meses} primeiras mensalidades` : "Todas as mensalidades";
+    const cond = `${quando} por ${brl(vc.novo)}` + (vc.meses ? `, depois ${brl(pl.valor)}/mês` : "");
+    return { ...base, grande: `${brl(vc.novo)}<small>${vc.meses === 1 ? " na 1ª" : "/mês"}</small>`, de: `${brl(pl.valor)}/mês`, cond, texto: cond };
+  }
+  const n = pl.duracao || 1;
+  if (!vc) {
+    return {
+      grande: `${n}x ${brl(pl.valor / n)}`,
+      det: `Total ${brl(pl.valor)}` + (mat ? ` · matrícula ${brl(mat)}` : ""),
+      texto: `${n}x de ${brl(pl.valor / n)} (total ${brl(pl.valor)})` + (mat ? ` + matrícula de ${brl(mat)}` : "")
+    };
+  }
+  const pct = Math.floor(vc.desc / pl.valor * 100);
+  return {
+    grande: `${n}x ${brl(vc.novo / n)}`,
+    de: `${n}x ${brl(pl.valor / n)} · total ${brl(pl.valor)}`,
+    det: `Total ${brl(vc.novo)}` + (isenta ? " · matrícula grátis" : mat ? ` + matrícula ${brl(mat)}` : ""),
+    pct,
+    texto: `De ~${n}x ${brl(pl.valor / n)}~ por *${n}x ${brl(vc.novo / n)}*` + (isenta ? " e *matrícula grátis*" : mat ? ` + matrícula de ${brl(mat)}` : "") +
+      `\nVocê está tendo ${pct}% de desconto nessa condição se comparado ao nosso valor normal trabalhado.`
+  };
+}
+
+function resumo(u, pl) {
+  const def = PLANO[pl.chave], p = precoInfo(u, pl);
+  const linhas = [`*UFit ${u.nome}* · ${def.nome}`, p.texto + (def.tipo === "recorrente" && pl.matricula ? ` + matrícula de ${brl(pl.matricula)}` : "")];
+  if (def.argumento) linhas.push(def.argumento);
+  linhas.push(def.beneficios.map(b => `✅ ${b}`).join("\n"));
+  if (!u.prevenda) linhas.push(`📍 ${u.endereco} · ${u.bairro}, ${u.cidade}/${u.uf}`);
+  const link = linkCheckout(u, pl);
+  if (link) linhas.push(`👉 Garanta aqui: ${link}`);
+  return linhas.join("\n");
+}
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 1800);
+}
+async function copiar(texto, msg) {
+  try { await navigator.clipboard.writeText(texto); toast(msg); }
+  catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = texto; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e2) {}
+    ta.remove(); toast(ok ? msg : "Não foi possível copiar. Selecione o texto e use Ctrl+C.");
+  }
+}
+
+function renderLista() {
+  const q = norm(document.getElementById("busca").value.trim());
+  const ul = document.getElementById("lista");
+  let n = 0;
+  ul.innerHTML = DADOS.unidades.map(u => {
+    const mods = modalidades(u);
+    const porNome = !q || norm(`${u.nome} ${u.cidade} ${u.bairro}`).includes(q);
+    const aulasHit = q ? mods.filter(m => norm(m).includes(q)) : [];
+    if (!porNome && !aulasHit.length) return "";
+    n++;
+    return `<li><button class="uni" data-slug="${u.slug}" aria-current="${u.slug === atual}">
+      <span class="n">${esc(u.nome)}</span><span class="k">${CAT[u.categoria]}</span>
+      <span class="c">${esc(u.cidade)} · ${u.uf}</span>
+      ${!porNome && aulasHit.length ? `<span class="hit">Tem ${esc(aulasHit.join(", "))}</span>` : ""}
+    </button></li>`;
+  }).join("");
+  document.getElementById("vaziobusca").hidden = n > 0;
+}
+
+function renderFicha() {
+  const u = DADOS.unidades.find(x => x.slug === atual);
+  const hoje = new Date().getDay(); // 1 = segunda
+  const colHoje = hoje >= 1 && hoje <= 5 ? hoje : -1;
+  const mods = modalidades(u);
+  if (filtroAula && !mods.includes(filtroAula)) filtroAula = null;
+
+  const video = u.video
+    ? `<video src="${u.video}" controls muted loop playsinline preload="metadata" aria-label="Vídeo da unidade ${esc(u.nome)}"></video>`
+    : `<div class="semvideo"><strong>Vídeo em breve</strong><span>Ainda não recebemos o vídeo de ${esc(u.nome)}.</span></div>`;
+
+  const inaug = u.inauguracao
+    ? `<div class="inaug tem"><h3>Inauguração próxima</h3><p><strong>${esc(u.inauguracao.nome)}</strong> em ${dataBR(u.inauguracao.data)}</p><p class="sub">${esc(u.inauguracao.endereco || "")}</p></div>`
+    : `<div class="inaug"><h3>Inauguração próxima</h3><p>Nenhuma prevista perto desta unidade.</p></div>`;
+
+  const planos = u.planos.map(pl => {
+    const def = PLANO[pl.chave];
+    if (pl.faltando) return `<article class="plano faltando"><div class="nome"><strong>${esc(def.nome)}</strong></div><p class="arg">Plano não encontrado no EVO desta unidade.</p></article>`;
+    const p = precoInfo(u, pl);
+    const v = voucherAtual(u);
+    const link = linkCheckout(u, pl);
+    return `<article class="plano ${def.linha}">
+      <div class="nome"><strong>${esc(def.nome)}</strong><span class="tag ${def.tipo}">${def.tipo === "recorrente" ? "SEM FIDELIDADE" : "FIDELIDADE"}</span></div>
+      <div class="preco">${p.de ? `<div class="de">${p.de}</div>` : ""}<div class="grande">${p.grande}</div><div class="det">${p.det}</div></div>
+      ${p.pct != null ? `<span class="desc">${p.pct}% de desconto</span>` : ""}
+      ${p.cond ? `<p class="cond">${esc(p.cond)}</p>` : ""}
+      ${v && !v.regras[pl.chave] && def.tipo !== "recorrente" ? `<p class="naovale">O voucher ${esc(v.codigo)} não vale para este plano.</p>` : ""}
+      ${def.argumento ? `<p class="arg">${esc(def.argumento)}</p>` : ""}
+      <ul>${def.beneficios.map(b => `<li>${esc(b)}</li>`).join("")}</ul>
+      <div class="acoes">
+        <button class="btn" data-copiar="${pl.chave}">Copiar resumo</button>
+        ${link ? `<button class="btn sec" data-link="${pl.chave}">Copiar link</button>` : `<span class="semlink">${consultor ? "Página de vendas ainda não criada" : "Entre com o seu nome para ter o link"}</span>`}
+      </div>
+    </article>`;
+  }).join("");
+
+  const linhas = u.grade.grade.map(l => {
+    const tem = !filtroAula || l.slice(1).some(c => norm(c).includes(norm(filtroAula)));
+    const cels = l.slice(1).map((c, i) => {
+      const cls = [i + 1 === colHoje ? "hoje" : "", filtroAula && c && norm(c).includes(norm(filtroAula)) ? "match" : ""].join(" ").trim();
+      const conteudo = /vip/i.test(c) ? `<span class="vip">${esc(c)}</span>` : esc(c);
+      return `<td class="${cls}">${conteudo}</td>`;
+    }).join("");
+    return `<tr class="${tem ? "" : "apagada"}"><td class="hora">${l[0]}</td>${cels}</tr>`;
+  }).join("");
+
+  if (u.prevenda) {
+    // pré-venda: só os planos e os links
+    document.getElementById("ficha").innerHTML = `<div class="ficha-anim" style="display:flex;flex-direction:column;gap:22px">
+      <header class="topo"><div>
+        <div class="eyebrow">${esc(u.cidade)}/${u.uf}</div>
+        <h1>UFit ${esc(u.nome)}</h1>
+        <div class="selos"><span class="selo cat-PREVENDA">Pré-venda</span></div>
+      </div></header>
+      <section aria-label="Planos">
+        <div class="cab"><h2>Planos para ofertar</h2><span class="nota">Valores do EVO em ${DADOS.geradoEm}</span></div>
+        <div class="planos">${planos}</div>
+      </section>
+    </div>`;
+    return;
+  }
+
+  const anos = ((Date.now() - new Date(u.abertura)) / (365.25 * 864e5));
+  const idade = anos < 1 ? `${Math.max(1, Math.round(anos * 12))} meses` : `${anos.toFixed(1).replace(".", ",")} anos`;
+
+  document.getElementById("ficha").innerHTML = `<div class="ficha-anim" style="display:flex;flex-direction:column;gap:22px">
+    <header class="topo">
+      <div>
+        <div class="eyebrow">${esc(u.bairro)} · ${esc(u.cidade)}/${u.uf}</div>
+        <h1>UFit ${esc(u.nome)}</h1>
+        <div class="selos"><span class="selo cat-${u.categoria}">${CAT[u.categoria]}</span></div>
+      </div>
+      <dl class="fatos">
+        <div class="fato"><dt>Tamanho</dt><dd>${u.m2.toLocaleString("pt-BR")} m²</dd></div>
+        <div class="fato"><dt>Inaugurada</dt><dd>${dataBR(u.abertura)}</dd></div>
+        <div class="fato"><dt>Aberta há</dt><dd>${idade}</dd></div>
+      </dl>
+    </header>
+
+    <section class="faixa" aria-label="Endereço e contato">
+      <div><h3>Endereço</h3><p><button class="copiavel" data-texto="${esc(`${u.endereco}, ${u.bairro}, ${u.cidade}/${u.uf}, CEP ${u.cep}`)}">${esc(u.endereco)}</button></p><p class="sub">${esc(u.bairro)} · CEP ${u.cep}</p></div>
+      <div><h3>WhatsApp da unidade</h3><p><button class="copiavel" data-texto="${esc(u.whatsapp)}">${esc(u.whatsapp)}</button></p><p class="sub">${u.proximas.length ? "Mais perto: " + u.proximas.map(p => `${esc(p.nome)} (${p.km.toString().replace(".", ",")} km)`).join(" · ") : ""}</p></div>
+      ${inaug}
+    </section>
+
+    ${DADOS.previa ? `<p class="previa">${esc(DADOS.previa)}</p>` : ""}
+    <section class="barra" aria-label="Atendimento">
+      <label>Voucher da campanha
+        <select id="selVoucher">
+          <option value="">Sem voucher</option>
+          ${(u.vouchers || []).map(v => `<option value="${esc(v.codigo)}" ${v.codigo === voucher ? "selected" : ""}>${esc(v.codigo)}${v.exemplo ? " (exemplo)" : ""}</option>`).join("")}
+        </select>
+      </label>
+      <p class="info">${voucherAtual(u) ? `Preços e links com o voucher <strong>${esc(voucher)}</strong> aplicado.` : (u.vouchers || []).length ? "Escolha o voucher da campanha para ver o preço com desconto." : "Nenhum voucher do call center ativo nesta unidade."}</p>
+    </section>
+
+    <div class="meio">
+      <div class="video">${video}</div>
+      <section aria-label="Planos">
+        <div class="cab"><h2>Planos para ofertar</h2><span class="nota">Valores do EVO em ${DADOS.geradoEm}</span></div>
+        <div class="planos">${planos}</div>
+      </section>
+    </div>
+
+    ${!u.grade.grade.length ? `<section class="aulas" aria-label="Aulas coletivas">
+      <div class="cab"><h2>Aulas coletivas</h2></div>
+      <p class="nota">Grade de aulas em breve: ainda não recebemos o cartaz de ${esc(u.nome)}.</p>
+    </section>` : `<section class="aulas" aria-label="Aulas coletivas">
+      <div class="cab"><h2>Aulas coletivas</h2>${u.aulas_img ? `<button class="btn sec" id="verCartaz">Ver cartaz original</button>` : ""}</div>
+      <div class="mods" role="group" aria-label="Filtrar por modalidade">
+        ${mods.map(m => `<button class="mod" data-mod="${esc(m)}" aria-pressed="${m === filtroAula}">${esc(m)}</button>`).join("")}
+      </div>
+      <div class="tabela"><table>
+        <thead><tr><th>Hora</th>${DIAS.map((d, i) => `<th class="${i + 1 === colHoje ? "hoje" : ""}">${d}${i + 1 === colHoje ? " · hoje" : ""}</th>`).join("")}</tr></thead>
+        <tbody>${linhas}</tbody>
+      </table></div>
+      ${u.grade.obs ? `<p class="obs">${esc(u.grade.obs)}</p>` : ""}
+    </section>`}
+  </div>`;
+}
+
+function render() { renderLista(); renderFicha(); renderLogado(); }
+
+function renderLogado() {
+  const o = DADOS.operadores.find(x => x.chave === consultor);
+  document.getElementById("logado").innerHTML = o
+    ? `<div><span>Atendendo</span><strong>${esc(o.nome)}</strong></div><button id="trocar">Trocar</button>`
+    : `<div><span>Atendendo</span><strong>Ninguém</strong></div><button id="trocar">Entrar</button>`;
+}
+
+function abrirEntrada() {
+  document.getElementById("pessoas").innerHTML = DADOS.operadores.map(o =>
+    `<button class="pessoa ${o.chave === consultor ? "atual" : ""}" data-pessoa="${o.chave}">${esc(o.nome)}</button>`).join("");
+  document.getElementById("entrada").hidden = false;
+  const b = document.querySelector(".pessoa.atual") || document.querySelector(".pessoa");
+  if (b) b.focus();
+}
+
+document.getElementById("pessoas").addEventListener("click", e => {
+  const b = e.target.closest("[data-pessoa]"); if (!b) return;
+  consultor = b.dataset.pessoa; guardar("painel-consultor", consultor);
+  document.getElementById("entrada").hidden = true;
+  render();
+});
+document.getElementById("logado").addEventListener("click", e => { if (e.target.id === "trocar") abrirEntrada(); });
+
+document.getElementById("lista").addEventListener("click", e => {
+  const b = e.target.closest(".uni"); if (!b) return;
+  atual = b.dataset.slug; guardar("painel-unidade", atual);
+  const q = norm(document.getElementById("busca").value.trim());
+  const u = DADOS.unidades.find(x => x.slug === atual);
+  const m = q && modalidades(u).find(x => norm(x).includes(q));
+  filtroAula = m || null;
+  render(); document.getElementById("ficha").scrollTop = 0; window.scrollTo(0, 0);
+});
+document.getElementById("busca").addEventListener("input", renderLista);
+document.getElementById("busca").addEventListener("keydown", e => {
+  if (e.key === "Enter") { const b = document.querySelector(".uni"); if (b) b.click(); }
+});
+document.getElementById("ficha").addEventListener("click", e => {
+  const u = DADOS.unidades.find(x => x.slug === atual);
+  const c = e.target.closest("[data-copiar]");
+  if (c) { copiar(resumo(u, u.planos.find(p => p.chave === c.dataset.copiar)), "Resumo copiado"); return; }
+  const l = e.target.closest("[data-link]");
+  if (l) { copiar(linkCheckout(u, u.planos.find(p => p.chave === l.dataset.link)), "Link do checkout copiado"); return; }
+  const t = e.target.closest("[data-texto]");
+  if (t) { copiar(t.dataset.texto, "Copiado"); return; }
+  const m = e.target.closest("[data-mod]");
+  if (m) { filtroAula = filtroAula === m.dataset.mod ? null : m.dataset.mod; renderFicha(); return; }
+  if (e.target.id === "verCartaz") {
+    const img = document.getElementById("cartazImg");
+    img.src = u.aulas_img; img.alt = `Cartaz de aulas coletivas da UFit ${u.nome}`;
+    document.getElementById("cartaz").showModal();
+  }
+});
+document.getElementById("ficha").addEventListener("change", e => {
+  if (e.target.id === "selVoucher") { voucher = e.target.value; guardar("painel-voucher", voucher); renderFicha(); }
+});
+document.getElementById("fecharCartaz").addEventListener("click", () => document.getElementById("cartaz").close());
+document.getElementById("cartaz").addEventListener("click", e => { if (e.target.id === "cartaz") e.target.close(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement.tagName !== "INPUT") { e.preventDefault(); document.getElementById("busca").focus(); }
+});
+document.getElementById("rodape").innerHTML = `${DADOS.unidades.length} unidades no painel<br>Valores do EVO: ${DADOS.geradoEm}<br>Atalho: tecle / para buscar`;
+render();
+if (!consultor) abrirEntrada();
+</script>

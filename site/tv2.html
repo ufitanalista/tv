@@ -1,0 +1,467 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranking de Vendas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tv.css">
+<style>
+  .numeros { grid-template-columns: repeat(4, 1fr) 1.6fr; }
+  .numeros .val { font-size: 56px; white-space: nowrap; }
+  .numeros .numero:first-child { border-top-color: var(--amarelo); }
+  .numeros .numero:nth-child(2) { border-top-color: var(--amarelo); }
+  .numeros .numero:first-child .val, .numeros .numero:nth-child(2) .val { color: var(--amarelo); }
+  .meta-barra { height: 34px; background: var(--cartao-2); border-radius: 8px; overflow: hidden; margin-top: 12px; }
+  .meta-barra div { height: 100%; background: var(--amarelo); border-radius: 8px; }
+  .sem-meta { font-size: 26px; color: var(--texto-3); font-weight: 700; margin-top: 18px; }
+
+  .corpo { display: grid; grid-template-columns: 720px 1fr; gap: 28px; flex: 1; min-height: 0; }
+
+  /* Pódio */
+  .podio { display: flex; align-items: flex-end; gap: 16px; height: 100%; padding-top: 10px; }
+  .podio.vazio { align-items: center; justify-content: center; text-align: center; font-size: 46px; font-weight: 800; color: var(--texto-2); background: var(--cartao); border-radius: 16px; }
+  .podio.vazio small { font-size: 24px; font-weight: 600; color: var(--texto-3); }
+  .degrau { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .degrau .med { font-size: 64px; line-height: 1; }
+  .degrau .nome { font-size: 36px; font-weight: 800; margin: 10px 0 2px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .degrau .eq { font-size: 18px; color: var(--texto-3); font-weight: 600; }
+  .degrau .bloco { width: 100%; margin-top: 14px; border-radius: 16px 16px 0 0; background: var(--cartao); display: flex; flex-direction: column; justify-content: flex-start; padding-top: 22px; gap: 4px; }
+  .degrau .bloco .q { font-size: 70px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .degrau .bloco .q small { font-size: 22px; font-weight: 700; color: var(--texto-2); display: block; margin-top: 4px; }
+  .degrau .bloco .v { font-size: 30px; font-weight: 800; color: var(--amarelo); font-variant-numeric: tabular-nums; margin-top: 10px; }
+  .degrau .pos { font-size: 60px; font-weight: 800; color: var(--linha); margin-top: auto; padding-bottom: 10px; }
+  .d1 .bloco { height: 330px; background: linear-gradient(180deg, #3a2f10, var(--cartao) 70%); border-top: 6px solid var(--amarelo); }
+  .d2 .bloco { height: 270px; border-top: 6px solid #c3c2b7; }
+  .d3 .bloco { height: 220px; border-top: 6px solid #b0742f; }
+
+  /* Lista do ranking */
+  table { width: 100%; border-collapse: separate; border-spacing: 0 7px; }
+  th { font-size: 17px; color: var(--texto-2); font-weight: 700; text-transform: uppercase; text-align: right; padding: 0 14px 2px; }
+  th.e { text-align: left; }
+  td { background: var(--cartao); font-size: 27px; font-weight: 700; text-align: right; padding: 7px 14px; font-variant-numeric: tabular-nums; }
+  td:first-child { border-radius: 12px 0 0 12px; text-align: center; color: var(--texto-3); font-weight: 800; width: 70px; }
+  td:last-child { border-radius: 0 12px 12px 0; }
+  td.nome { text-align: left; font-weight: 800; }
+  td.nome small { font-size: 16px; margin-left: 8px; color: var(--texto-3); font-weight: 600; }
+  td.valor { color: var(--amarelo); font-weight: 800; }
+  td.barra { width: 230px; }
+  td.barra div { height: 16px; border-radius: 0 4px 4px 0; background: var(--amarelo); opacity: .85; }
+  td.zero { color: var(--texto-3); font-weight: 500; }
+  td.conv { font-size: 24px; color: var(--texto-2); }
+  tr.top td:first-child { color: var(--amarelo); }
+  table.folgada td { font-size: 31px; padding: 14px 14px; white-space: nowrap; }
+  table.folgada td.nome small { font-size: 17px; }
+  table.folgada td.barra div { height: 22px; }
+
+  /* Últimas vendas */
+  .ultimas { display: flex; align-items: center; gap: 18px; height: 64px; flex: none; background: var(--cartao); border-radius: 14px; padding: 0 22px; overflow: hidden; }
+  .ultimas .rot { font-size: 20px; font-weight: 800; color: var(--amarelo); text-transform: uppercase; white-space: nowrap; }
+  .ultimas .item { font-size: 23px; white-space: nowrap; color: var(--texto-2); }
+  .ultimas .item b { color: var(--texto); }
+  .ultimas .item + .item::before { content: '•'; margin-right: 18px; color: var(--texto-3); }
+
+  /* Abas de lista: últimas vendas e vendas pendentes */
+  .lista-tit { display: flex; align-items: baseline; gap: 22px; flex: none; }
+  .lista-tit h2 { font-size: 34px; font-weight: 800; }
+  .lista-tit .obs { font-size: 22px; color: var(--texto-2); font-weight: 600; }
+  .lista-tit .obs b { color: var(--amarelo); }
+  table.lista { border-spacing: 0 6px; table-layout: fixed; }
+  table.lista th { text-align: left; }
+  table.lista th.d, table.lista td.d { text-align: right; }
+  table.lista td { font-size: 25px; padding: 9px 16px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  table.lista td:first-child { text-align: left; color: var(--texto-2); font-weight: 700; width: auto; }
+  table.lista td.op { font-weight: 800; }
+  table.lista td.cli { color: var(--texto-2); font-weight: 600; }
+  table.lista td.pl { font-size: 21px; color: var(--texto-2); font-weight: 600; }
+  table.lista td.pl b { color: var(--texto); font-weight: 700; }
+  table.lista tr.nova td { background: #2a2410; }
+  .sit { display: inline-block; font-size: 18px; font-weight: 800; padding: 5px 12px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px; }
+  .sit.venc { background: rgba(208,59,59,.18); color: #ff7b7b; }
+  .sit.agu { background: rgba(250,178,25,.16); color: var(--pausa); }
+  .lista-vazia { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; background: var(--cartao); border-radius: 16px; font-size: 42px; font-weight: 800; color: var(--texto-2); }
+  .lista-vazia small { display: block; font-size: 24px; font-weight: 600; color: var(--texto-3); margin-top: 8px; }
+  .numeros .numero.pend { border-top-color: var(--critico); }
+  .numeros .numero.pend .val { color: #ff7b7b; }
+  .por-op { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; font-size: 26px; font-weight: 700; color: var(--texto-2); }
+  .por-op b { color: #ff7b7b; font-size: 34px; }
+  /* venda que acabou de entrar: desce do topo e empurra as outras */
+  @keyframes entra { from { transform: translateY(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  table.lista tr.entrando td { animation: entra .9s ease-out both; background: #3a2f10; }
+  .mais { font-size: 20px; color: var(--texto-3); font-weight: 600; text-align: right; }
+
+  /* Comemoração de venda nova */
+  #festa { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(11,10,9,.88); opacity: 0; pointer-events: none; transition: opacity .5s; z-index: 10; }
+  #festa.on { opacity: 1; }
+  #festa .caixa { text-align: center; transform: scale(.8); transition: transform .5s; }
+  #festa.on .caixa { transform: scale(1); }
+  #festa .t { font-size: 46px; font-weight: 800; color: var(--amarelo); letter-spacing: 4px; }
+  #festa .n { font-size: 150px; font-weight: 800; line-height: 1.05; }
+  #festa .p { font-size: 40px; color: var(--texto-2); font-weight: 600; }
+  #festa .v { font-size: 90px; font-weight: 800; color: var(--amarelo); margin-top: 10px; }
+  #som-aviso { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); z-index: 20; background: var(--critico); color: #fff; font-size: 26px; font-weight: 700; padding: 12px 26px; border-radius: 12px; white-space: nowrap; }
+  #mega { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #3a2f10, rgba(11,10,9,.95) 70%); opacity: 0; pointer-events: none; transition: opacity .5s; z-index: 12; }
+  #mega.on { opacity: 1; }
+  #mega .caixa { text-align: center; animation: pulsa 0.8s ease-in-out infinite alternate; }
+  #mega .t { font-size: 60px; font-weight: 800; color: var(--amarelo); letter-spacing: 4px; }
+  #mega .n { font-size: 200px; font-weight: 800; line-height: 1.05; }
+  #mega .v { font-size: 110px; font-weight: 800; color: var(--amarelo); }
+  @keyframes pulsa { from { transform: scale(.96); } to { transform: scale(1.04); } }
+  .confete { position: fixed; top: -20px; width: 14px; height: 22px; z-index: 11; animation: cai linear forwards; }
+  @keyframes cai { to { transform: translateY(1150px) rotate(720deg); } }
+</style>
+</head>
+<body>
+<div id="palco">
+  <div class="topo">
+    <img src="logo_ufit.png" alt="UFit">
+    <h1>RANKING DE VENDAS · <span id="periodo">HOJE</span></h1>
+    <div class="direita">
+      <span class="selo-exemplo" id="selo" style="display:none">DADOS DE EXEMPLO</span>
+      <div class="data" id="data"></div>
+      <div class="relogio" id="relogio"></div>
+    </div>
+  </div>
+
+  <div class="numeros" id="numeros"></div>
+  <div class="telas" id="telas">
+    <div class="tela" data-nome="Ranking de hoje"></div>
+    <div class="tela" data-nome="Ranking do mês"></div>
+    <div class="tela" data-nome="Últimas vendas"></div>
+    <div class="tela" data-nome="Vendas pendentes"></div>
+  </div>
+  <div class="ultimas" id="ultimas"></div>
+
+  <div class="rodape">
+    <div class="pontos" id="pontos"></div>
+    <div class="nome-tela" id="nome-tela"></div>
+    <div class="progresso"><div id="barra"></div></div>
+  </div>
+</div>
+<div id="som-aviso" style="display:none">🔇 Som desligado: aperte <b>OK</b> no controle para ativar o sino das vendas</div>
+<div id="mega"><div class="caixa"><div class="t">🏆 BATEU A MARCA! 🏆</div><div class="n" id="mega-nome"></div><div class="v" id="mega-qtd"></div></div></div>
+<div id="festa"><div class="caixa"><div class="t">🎉 NOVA VENDA 🎉</div><div class="n" id="festa-nome"></div><div class="p" id="festa-plano"></div><div class="v" id="festa-valor"></div></div></div>
+
+<script src="cripto.js" data-arquivo="dados.enc" data-var="DADOS"></script>
+<script src="nosleep.min.js"></script>
+<script src="tv-comum.js"></script>
+<script type="text/plain" class="app">
+var SEGUNDOS_POR_TELA = 20;
+var SEGUNDOS_COMEMORACAO = 17;
+var MAX_LINHAS = 10; // linhas na lista do ranking
+
+var esc = TV.esc;
+function D() { return window.DADOS; }
+// no ranking entram só os operadores da lista (operadores.csv), ligados a um vendedor do EVO
+function vendedores() { return D().operadores.filter(function (o) { return o.evo; }); }
+var telaAtual = 0; // 0 = hoje, 1 = mês
+// conversão (vendas ÷ atendidas) só existe com o GoVoice conectado
+function temGoVoice() { return D().exemplo || D().govoice; }
+
+// Ordem do ranking: mais vendas; empate → maior faturado
+function ranking(chave) {
+  return vendedores().slice().sort(function (a, b) {
+    return b[chave].qtd - a[chave].qtd || b[chave].valor - a[chave].valor;
+  });
+}
+
+// na aba de pendentes, os cartões de cima mostram o que falta receber
+function renderNumerosPendentes() {
+  var l = D().vendasPendentes || [], venc = l.filter(function (v) { return v.vencida; }).length, por = {};
+  l.forEach(function (v) { por[v.operador] = (por[v.operador] || 0) + 1; });
+  var quem = Object.keys(por).sort(function (a, b) { return por[b] - por[a]; });
+  document.getElementById('numeros').innerHTML =
+    '<div class="numero pend"><div class="rot">Vendas pendentes</div><div class="val">' + l.length + '</div><div class="sub">aguardando o cliente pagar</div></div>' +
+    '<div class="numero pend"><div class="rot">Valor pendente de pagamento</div><div class="val">' + TV.reais(soma(l)) + '</div><div class="sub">a receber</div></div>' +
+    '<div class="numero"><div class="rot">Links vencidos</div><div class="val" style="color:' + (venc ? '#ff7b7b' : 'inherit') + '">' + venc + '</div><div class="sub">precisam de link novo</div></div>' +
+    '<div class="numero"><div class="rot">Mais antiga</div><div class="val">' + (l.length ? diasDesde(l[l.length - 1].venda) : '—') + '</div><div class="sub">desde o lançamento</div></div>' +
+    '<div class="numero"><div class="rot">Pendentes por consultor</div><div class="por-op">' +
+      (quem.length ? quem.map(function (n) { return '<span><b>' + por[n] + '</b> ' + esc(n) + '</span>'; }).join('') : '<span>ninguém 🎉</span>') + '</div></div>';
+}
+function diasDesde(iso) {
+  var d = Math.floor((Date.now() - new Date(iso)) / 86400000);
+  return d < 1 ? 'hoje' : d === 1 ? '1 dia' : d + ' dias';
+}
+
+function renderNumeros() {
+  if (telaAtual === 3) return renderNumerosPendentes();
+  var chave = telaAtual === 0 ? 'vendasHoje' : 'vendasMes';
+  var meta = telaAtual === 0 ? D().metaDia : D().metaMes;
+  var q = 0, v = 0, at = 0;
+  vendedores().forEach(function (o) { q += o[chave].qtd; v += o[chave].valor; at += o.atendidas; });
+  var itens = [
+    ['Vendas ' + (telaAtual === 0 ? 'hoje' : 'no mês'), q, 'equipe toda'],
+    ['Faturado ' + (telaAtual === 0 ? 'hoje' : 'no mês'), TV.reais(v), ''],
+    ['Ticket médio', q ? TV.reais(v / q) : '—', 'por venda'],
+    telaAtual === 0 && temGoVoice() ? ['Conversão hoje', at ? (q / at * 100).toFixed(1).replace('.', ',') + '%' : '—', 'vendas ÷ ligações atendidas']
+                    : ['Consultores vendendo', vendedores().filter(function (o) { return o[chave].qtd > 0; }).length + ' de ' + vendedores().length, 'com 1 venda ou mais']
+  ];
+  var metaHtml;
+  if (meta) {
+    var pq = Math.round(q / meta.qtd * 100);
+    metaHtml = '<div class="numero"><div class="rot">Meta ' + (telaAtual === 0 ? 'do dia' : 'do mês') + ': ' + meta.qtd + ' vendas · ' + TV.reais(meta.valor) + '</div>' +
+      '<div class="val">' + pq + '%</div><div class="meta-barra"><div style="width:' + Math.min(100, pq) + '%"></div></div></div>';
+  } else {
+    metaHtml = '<div class="numero"><div class="rot">Meta ' + (telaAtual === 0 ? 'do dia' : 'do mês') + '</div><div class="sem-meta">A definir<br><span style="font-size:20px;font-weight:600">a barra de progresso aparece quando a meta for cadastrada</span></div></div>';
+  }
+  document.getElementById('numeros').innerHTML = itens.map(function (i) {
+    return '<div class="numero"><div class="rot">' + i[0] + '</div><div class="val">' + i[1] + '</div><div class="sub">' + (i[2] || '&nbsp;') + '</div></div>';
+  }).join('') + metaHtml;
+}
+
+function telaRanking(chave) {
+  var lista = ranking(chave);
+  var top = lista.slice(0, 3).filter(function (o) { return o[chave].qtd > 0; });
+  var degrau = function (o, n) {
+    if (!o) return '<div class="degrau d' + n + '"></div>';
+    return '<div class="degrau d' + n + '"><div class="med">' + ['🥇', '🥈', '🥉'][n - 1] + '</div><div class="nome">' + esc(o.govoice) + '</div><div class="eq">' + esc(o.equipe) + '</div>' +
+      '<div class="bloco"><div class="q">' + o[chave].qtd + '<small>' + (o[chave].qtd === 1 ? 'venda' : 'vendas') + '</small></div><div class="v">' + TV.reais(o[chave].valor) + '</div></div></div>';
+  };
+  var maxV = Math.max.apply(null, lista.map(function (o) { return o[chave].valor; })) || 1;
+  var hoje = chave === 'vendasHoje' && temGoVoice();
+  var linhas = lista.slice(0, MAX_LINHAS).map(function (o, i) {
+    var q = o[chave].qtd, v = o[chave].valor;
+    return '<tr class="' + (i < 3 && q ? 'top' : '') + '"><td>' + (q ? (i + 1) + 'º' : '–') + '</td><td class="nome">' + esc(o.govoice) + (o.cadastradoNoEvo === false ? ' <small style="color:var(--critico)">sem cadastro no EVO</small>' : o.equipe ? ' <small>' + esc(o.equipe) + '</small>' : '') + '</td>' +
+      '<td class="' + (q ? '' : 'zero') + '">' + q + '</td><td class="valor' + (v ? '' : ' zero') + '">' + TV.reais(v) + '</td>' +
+      '<td class="barra"><div style="width:' + (v / maxV * 100) + '%"></div></td>' +
+      (hoje ? '<td class="conv">' + (o.atendidas ? (q / o.atendidas * 100).toFixed(0) + '% <small style="font-size:16px">(' + q + ' de ' + o.atendidas + ')</small>' : '—') + '</td>' : '') + '</tr>';
+  }).join('');
+  var podio = top.length ? '<div class="podio">' + degrau(top[1], 2) + degrau(top[0], 1) + degrau(top[2], 3) + '</div>'
+    : '<div class="podio vazio"><div>🏁<br>Ainda sem vendas ' + (chave === 'vendasHoje' ? 'hoje' : 'no mês') + '<br><small>a primeira venda abre o pódio</small></div></div>';
+  return '<div class="corpo">' + podio +
+    '<div><table class="' + (lista.length <= 7 ? 'folgada' : '') + '"><tr><th>#</th><th class="e">Consultor</th><th>Vendas</th><th>Faturado</th><th></th>' + (hoje ? '<th>Conversão</th>' : '') + '</tr>' + linhas + '</table></div></div>';
+}
+
+function haQuanto(u) {
+  var min = u.quando ? Math.max(0, Math.round((Date.now() - new Date(u.quando)) / 60000)) : u.minutos;
+  if (min < 60) return 'há ' + min + ' min';
+  if (min < 24 * 60) return 'há ' + Math.floor(min / 60) + 'h';
+  var d = new Date(u.quando || Date.now() - min * 60000);
+  return 'em ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function renderUltimas() {
+  if (!D().ultimasVendas.length) { document.getElementById('ultimas').innerHTML = '<span class="rot">🔔 Últimas vendas</span><span class="item">nenhuma venda no mês ainda</span>'; return; }
+  document.getElementById('ultimas').innerHTML = '<span class="rot">🔔 Últimas vendas</span>' + D().ultimasVendas.slice(0, 3).map(function (u) {
+    return '<span class="item"><b>' + esc(u.operador) + '</b> · ' + esc(u.plano) + ' · ' + esc(u.unidade) + ' · <b>' + TV.reais(u.valor, true) + '</b> · ' + haQuanto(u) + '</span>';
+  }).join('');
+}
+
+// ---------- Abas de lista (em teste) ----------
+var LINHAS_LISTA = 9;
+function hora(iso) { var d = new Date(iso); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function diaHora(iso) {
+  var d = new Date(iso), h = new Date();
+  var mesmoDia = d.toDateString() === h.toDateString();
+  var ontem = new Date(h.getFullYear(), h.getMonth(), h.getDate() - 1).toDateString() === d.toDateString();
+  return (mesmoDia ? 'hoje' : ontem ? 'ontem' : String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0')) + ' ' + hora(iso);
+}
+function soma(l) { return l.reduce(function (s, v) { return s + v.valor; }, 0); }
+function mais(l) { return l.length > LINHAS_LISTA ? '<div class="mais">+ ' + (l.length - LINHAS_LISTA) + ' ' + (l.length - LINHAS_LISTA === 1 ? 'venda' : 'vendas') + ' fora da tela</div>' : ''; }
+
+// ids já mostrados na lista: o que chegar depois entra no topo com animação
+var recentesVistas = null, entrando = {};
+function telaRecentes() {
+  var l = D().vendasRecentes || [];
+  if (recentesVistas) l.forEach(function (v) { if (!recentesVistas[v.id] && !entrando[v.id]) entrando[v.id] = Date.now(); });
+  recentesVistas = {}; l.forEach(function (v) { recentesVistas[v.id] = true; });
+  var hoje = l.filter(function (v) { return new Date(v.quando).toDateString() === new Date().toDateString(); });
+  var tit = '<div class="lista-tit"><h2>🔔 Últimas vendas pagas</h2><span class="obs">hoje: <b>' + hoje.length + ' ' + (hoje.length === 1 ? 'venda' : 'vendas') + ' · ' + TV.reais(soma(hoje)) + '</b></span></div>';
+  if (!l.length) return tit + '<div class="lista-vazia"><div>Nenhuma venda paga no mês ainda<small>assim que o pagamento cair, a venda aparece aqui</small></div></div>';
+  return tit + '<table class="lista"><colgroup><col style="width:245px"><col style="width:190px"><col style="width:290px"><col><col style="width:330px"><col style="width:200px"></colgroup>' +
+    '<tr><th>Pago em</th><th>Consultor</th><th>Cliente</th><th>Plano</th><th>Unidade</th><th class="d">Valor</th></tr>' +
+    l.slice(0, LINHAS_LISTA).map(function (v) {
+      var nova = Date.now() - new Date(v.quando) < 60 * 60000;
+      // anima só enquanto a aba está na tela pela primeira vez depois da chegada (até 2 min)
+      var anima = entrando[v.id] && Date.now() - entrando[v.id] < 120000 && telaAtual === 2;
+      if (anima) delete entrando[v.id];
+      return '<tr class="' + (anima ? 'entrando' : nova ? 'nova' : '') + '"><td>' + diaHora(v.quando) + '</td><td class="op">' + esc(v.operador) + '</td><td class="cli">' + esc(v.cliente || '—') + '</td>' +
+        '<td class="pl"><b>' + esc(v.plano) + '</b></td><td class="pl">' + esc(v.unidade) + '</td><td class="d valor">' + TV.reais(v.valor, true) + '</td></tr>';
+    }).join('') + '</table>' + mais(l);
+}
+
+function telaPendentes() {
+  var l = D().vendasPendentes || [];
+  var tit = '<div class="lista-tit"><h2>⏳ Vendas aguardando pagamento</h2><span class="obs">confirme com o cliente · link vencido = mandar link novo</span></div>';
+  if (!l.length) return tit + '<div class="lista-vazia"><div>✅ Nenhuma venda pendente<small>todas as vendas lançadas já foram pagas</small></div></div>';
+  return tit + '<table class="lista"><colgroup><col style="width:235px"><col style="width:170px"><col style="width:260px"><col><col style="width:270px"><col style="width:225px"><col style="width:215px"></colgroup>' +
+    '<tr><th>Lançada em</th><th>Consultor</th><th>Cliente</th><th>Plano</th><th>Unidade</th><th class="d">Valor</th><th>Situação</th></tr>' +
+    l.slice(0, LINHAS_LISTA).map(function (v) {
+      return '<tr><td>' + diaHora(v.venda) + '</td><td class="op">' + esc(v.operador) + '</td><td class="cli">' + esc(v.cliente || '—') + '</td>' +
+        '<td class="pl"><b>' + esc(v.plano) + '</b></td><td class="pl">' + esc(v.unidade) + '</td><td class="d valor">' + TV.reais(v.valor, true) + '</td>' +
+        '<td>' + (v.vencida ? '<span class="sit venc">Link vencido</span>' : '<span class="sit agu">Aguardando</span>') + '</td></tr>';
+    }).join('') + '</table>' + mais(l);
+}
+
+function render() {
+  document.getElementById('periodo').textContent = ['HOJE', 'MÊS', 'ÚLTIMAS VENDAS', 'PENDENTES'][telaAtual] || 'MÊS';
+  renderNumeros();
+  var telas = document.querySelectorAll('.tela');
+  telas[0].innerHTML = telaRanking('vendasHoje');
+  telas[1].innerHTML = telaRanking('vendasMes');
+  telas[2].innerHTML = telaRecentes();
+  telas[3].innerHTML = telaPendentes();
+  renderUltimas();
+}
+
+// só no exemplo: uma venda nova a cada ~45 s, para ver a comemoração
+if (D().exemplo) {
+  var planos = [['Plano FIT Recorrente', 99.90], ['Plano VIP Recorrente', 129.90], ['Plano FIT Anual', 958.80], ['UFit DUO', 59.90]];
+  var unidades = ['Balneário Camboriú', 'Itajaí', 'Blumenau', 'Gaspar', 'Tijucas', 'Brusque'];
+  setInterval(function () {
+    var o = D().operadores[Math.floor(Math.random() * D().operadores.length)];
+    var p = planos[Math.floor(Math.random() * planos.length)];
+    o.vendasHoje.qtd++; o.vendasHoje.valor += p[1]; o.vendasMes.qtd++; o.vendasMes.valor += p[1];
+    D().ultimasVendas.forEach(function (u) { u.minutos += 1; });
+    D().ultimasVendas.unshift({ id: Date.now(), operador: o.govoice, plano: p[0], unidade: unidades[Math.floor(Math.random() * unidades.length)], valor: p[1], minutos: 0 });
+    D().ultimasVendas = D().ultimasVendas.slice(0, 6);
+    render(); conferirNovas();
+  }, 45000);
+}
+
+// ---------- Sons (gerados pela própria página, sem arquivos) ----------
+// Os navegadores só liberam som depois de uma interação: aperta OK no controle uma vez.
+var META_INDIVIDUAL = 10;   // vendas de UM operador no dia que disparam o "barulhão"
+var audio = null;
+function somLiberado() { return !!audio && audio.state === 'running'; }
+function ativarSom() {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state !== 'running') audio.resume();
+  } catch (e) { return; }
+  setTimeout(function () {
+    if (somLiberado()) { tom(1320, 0, 0.18, 0.15, 'sine'); avisoSom(); if (/testar-som/.test(location.hash)) testarSom(); }
+  }, 150);
+}
+function avisoSom() { document.getElementById('som-aviso').style.display = somLiberado() ? 'none' : ''; }
+['keydown', 'click', 'touchstart'].forEach(function (ev) { document.addEventListener(ev, function () { if (!somLiberado()) ativarSom(); }); });
+setInterval(avisoSom, 3000);
+
+function saida() {
+  if (!audio._saida) {
+    var comp = audio.createDynamicsCompressor(); comp.connect(audio.destination);
+    audio._saida = comp;
+  }
+  return audio._saida;
+}
+function tom(freq, quando, dur, vol, tipo) {
+  var t = audio.currentTime + quando, o = audio.createOscillator(), g = audio.createGain();
+  o.type = tipo || 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(saida()); o.start(t); o.stop(t + dur + 0.05);
+}
+function batida(quando, dur, vol) {
+  var n = Math.floor(audio.sampleRate * dur), buf = audio.createBuffer(1, n, audio.sampleRate), d = buf.getChannelData(0);
+  for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+  var s = audio.createBufferSource(), g = audio.createGain(), t = audio.currentTime + quando;
+  s.buffer = buf; g.gain.value = vol; s.connect(g); g.connect(saida()); s.start(t);
+}
+// sino "dim-dom": cada batida soma os harmônicos de um sino
+function sino() {
+  if (!somLiberado()) return;
+  [[0, 1318.5], [0.5, 1046.5]].forEach(function (b) {
+    [[1, 0.35, 2.6], [2, 0.12, 1.8], [2.76, 0.10, 1.4], [5.4, 0.05, 0.8]].forEach(function (h) {
+      tom(b[1] * h[0], b[0], h[2], h[1], 'sine');
+    });
+  });
+}
+// "barulhão": tambor + fanfarra (sobe o arpejo e segura o acorde), duas vezes
+function barulhao() {
+  if (!somLiberado()) return;
+  for (var r = 0; r < 2; r++) {
+    var t0 = r * 3.4;
+    for (var k = 0; k < 8; k++) batida(t0 + k * 0.09, 0.12, 0.5);
+    [[392, 0.75], [523.3, 0.9], [659.3, 1.05], [784, 1.2]].forEach(function (n) {
+      tom(n[0], t0 + n[1], 0.22, 0.22, 'sawtooth'); tom(n[0] * 2, t0 + n[1], 0.22, 0.08, 'square');
+    });
+    [523.3, 659.3, 784, 1046.5].forEach(function (f) { tom(f, t0 + 1.4, 1.8, 0.2, 'sawtooth'); tom(f / 2, t0 + 1.4, 1.8, 0.12, 'triangle'); });
+    batida(t0 + 1.4, 0.6, 0.9);
+  }
+}
+
+// ---------- Fila de comemorações (uma de cada vez) ----------
+var fila = [], ocupado = false;
+function confete(qtd, duracao) {
+  var cores = ['#EEAE0E', '#f0efec', '#0ca30c', '#3987e5', '#fab219'];
+  for (var i = 0; i < qtd; i++) {
+    var c = document.createElement('div'); c.className = 'confete';
+    c.style.left = Math.random() * 100 + 'vw'; c.style.background = cores[i % cores.length];
+    c.style.animationDuration = (2.5 + Math.random() * 3) + 's'; c.style.animationDelay = Math.random() * (duracao - 5) + 's';
+    document.body.appendChild(c); setTimeout(c.remove.bind(c), duracao * 1000 + 1000);
+  }
+}
+function proxima() {
+  if (ocupado || !fila.length) return;
+  ocupado = true;
+  var item = fila.shift(), seg;
+  if (item.tipo === 'venda') {
+    var u = item.u;
+    document.getElementById('festa-nome').textContent = u.operador;
+    document.getElementById('festa-plano').textContent = u.plano + ' · ' + u.unidade;
+    document.getElementById('festa-valor').textContent = TV.reais(u.valor, true);
+    document.getElementById('festa').classList.add('on');
+    sino(); confete(120, SEGUNDOS_COMEMORACAO); seg = SEGUNDOS_COMEMORACAO;
+    setTimeout(function () { document.getElementById('festa').classList.remove('on'); }, seg * 1000);
+  } else {
+    document.getElementById('mega-nome').textContent = item.nome;
+    document.getElementById('mega-qtd').textContent = item.qtd + ' VENDAS HOJE!';
+    document.getElementById('mega').classList.add('on');
+    barulhao(); confete(260, 20); seg = 20;
+    setTimeout(function () { document.getElementById('mega').classList.remove('on'); }, seg * 1000);
+  }
+  setTimeout(function () { ocupado = false; proxima(); }, seg * 1000 + 800);
+}
+
+// vistas = todas as vendas já vistas desde que a página abriu (não só a última lista):
+// venda que sai das 6 últimas e volta não comemora de novo. "repete-…" (repetição pedida) compara só com a lista anterior.
+var vistas = null, anteriores = [];
+function chaveVenda(u) { return u.id ? String(u.id) : u.operador + '|' + u.plano + '|' + u.valor + '|' + u.minutos; }
+function conferirNovas() {
+  var atuais = D().ultimasVendas.map(chaveVenda);
+  if (vistas) {
+    // da mais antiga para a mais nova
+    D().ultimasVendas.filter(function (u) {
+      var k = chaveVenda(u);
+      return /^repete-/.test(k) ? anteriores.indexOf(k) < 0 : !vistas[k];
+    }).reverse()
+      .forEach(function (u) { fila.push({ tipo: 'venda', u: u }); });
+  }
+  vistas = vistas || {};
+  atuais.forEach(function (k) { vistas[k] = true; });
+  anteriores = atuais;
+  conferirMetas(!conferirMetas.iniciado); // 1ª leitura: só anota quem já tinha batido
+  conferirMetas.iniciado = true;
+  proxima();
+}
+// barulhão uma vez por operador por dia; ao abrir a página, quem já tinha batido não toca de novo
+var metaFeita = {};
+function conferirMetas(silencioso) {
+  var d = new Date(), hoje = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  vendedores().forEach(function (o) {
+    var chave = 'ufit-meta-' + hoje + '-' + o.govoice, feito = metaFeita[chave];
+    try { feito = feito || localStorage.getItem(chave) === '1'; } catch (e) {}
+    if (o.vendasHoje.qtd >= META_INDIVIDUAL && !feito) {
+      metaFeita[chave] = true;
+      try { localStorage.setItem(chave, '1'); } catch (e) {}
+      if (!silencioso) fila.push({ tipo: 'meta', nome: o.govoice, qtd: o.vendasHoje.qtd });
+    }
+  });
+}
+// teste: abrir tv2.html#testar-som e apertar OK → toca o sino e depois o barulhão
+function testarSom() {
+  fila.push({ tipo: 'venda', u: { operador: 'Teste', plano: 'Plano de teste', unidade: 'UFit', valor: 99.9 } });
+  fila.push({ tipo: 'meta', nome: 'Teste', qtd: META_INDIVIDUAL });
+  proxima();
+}
+
+TV.iniciar();
+render();
+conferirNovas();
+avisoSom();
+TV.rodizio(SEGUNDOS_POR_TELA, function (i) { telaAtual = i; render(); });
+TV.recarregar(20, function () { render(); conferirNovas(); });
+</script>
+</body>
+</html>
