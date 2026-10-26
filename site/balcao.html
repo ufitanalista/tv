@@ -413,14 +413,25 @@ function renderFicha() {
     return `<tr class="${tem ? "" : "apagada"}"><td class="hora">${l[0]}</td>${cels}</tr>`;
   }).join("");
 
+  const barra = `<section class="barra" aria-label="Atendimento">
+      <label>Voucher da campanha
+        <select id="selVoucher">
+          <option value="">Sem voucher</option>
+          ${(u.vouchers || []).map(v => `<option value="${esc(v.codigo)}" ${v.codigo === voucher ? "selected" : ""}>${esc(v.codigo)}${v.exemplo ? " (exemplo)" : ""}</option>`).join("")}
+        </select>
+      </label>
+      <p class="info">${voucherAtual(u) ? `Preços e links com o voucher <strong>${esc(voucher)}</strong> aplicado.` : (u.vouchers || []).length ? "Escolha o voucher da campanha para ver o preço com desconto." : "Nenhum voucher do call center ativo nesta unidade."}</p>
+    </section>`;
+
   if (u.prevenda) {
-    // pré-venda: só os planos e os links
+    // pré-venda: só os planos e os links (e o seletor quando a unidade tem voucher do call center)
     document.getElementById("ficha").innerHTML = `<div class="ficha-anim" style="display:flex;flex-direction:column;gap:22px">
       <header class="topo"><div>
         <div class="eyebrow">${esc(u.cidade)}/${u.uf}</div>
         <h1>UFit ${esc(u.nome)}</h1>
         <div class="selos"><span class="selo cat-PREVENDA">Pré-venda</span></div>
       </div></header>
+      ${(u.vouchers || []).length ? barra : ""}
       <section aria-label="Planos">
         <div class="cab"><h2>Planos para ofertar</h2><span class="nota">Valores do EVO em ${DADOS.geradoEm}</span></div>
         <div class="planos">${planos}</div>
@@ -453,15 +464,7 @@ function renderFicha() {
     </section>
 
     ${DADOS.previa ? `<p class="previa">${esc(DADOS.previa)}</p>` : ""}
-    <section class="barra" aria-label="Atendimento">
-      <label>Voucher da campanha
-        <select id="selVoucher">
-          <option value="">Sem voucher</option>
-          ${(u.vouchers || []).map(v => `<option value="${esc(v.codigo)}" ${v.codigo === voucher ? "selected" : ""}>${esc(v.codigo)}${v.exemplo ? " (exemplo)" : ""}</option>`).join("")}
-        </select>
-      </label>
-      <p class="info">${voucherAtual(u) ? `Preços e links com o voucher <strong>${esc(voucher)}</strong> aplicado.` : (u.vouchers || []).length ? "Escolha o voucher da campanha para ver o preço com desconto." : "Nenhum voucher do call center ativo nesta unidade."}</p>
-    </section>
+    ${barra}
 
     <div class="meio">
       <div class="video">${video}</div>
