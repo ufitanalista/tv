@@ -393,7 +393,8 @@ function renderFicha() {
       <div class="preco">${p.de ? `<div class="de">${p.de}</div>` : ""}<div class="grande">${p.grande}</div><div class="det">${p.det}</div></div>
       ${p.pct != null ? `<span class="desc">${p.pct}% de desconto</span>` : ""}
       ${p.cond ? `<p class="cond">${esc(p.cond)}</p>` : ""}
-      ${v && !v.regras[pl.chave] && def.tipo !== "recorrente" ? `<p class="naovale">O voucher ${esc(v.codigo)} não vale para este plano.</p>` : ""}
+      ${(u.semVoucher || []).includes(pl.chave) ? `<p class="naovale">Sem voucher nesta unidade: o ${esc(def.nome)} sai pelo preço cheio${v ? `, mesmo com o ${esc(v.codigo)} escolhido` : ""}.</p>` :
+        v && !v.regras[pl.chave] && def.tipo !== "recorrente" ? `<p class="naovale">O voucher ${esc(v.codigo)} não vale para este plano.</p>` : ""}
       ${def.argumento ? `<p class="arg">${esc(def.argumento)}</p>` : ""}
       <ul>${def.beneficios.map(b => `<li>${esc(b)}</li>`).join("")}</ul>
       <div class="acoes">
