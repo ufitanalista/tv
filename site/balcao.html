@@ -441,8 +441,9 @@ function renderFicha() {
     return;
   }
 
-  const anos = ((Date.now() - new Date(u.abertura)) / (365.25 * 864e5));
-  const idade = anos < 1 ? `${Math.max(1, Math.round(anos * 12))} meses` : `${anos.toFixed(1).replace(".", ",")} anos`;
+  // Roosevelt não tem metragem nem abertura na tabela de inaugurações
+  const anos = u.abertura ? ((Date.now() - new Date(u.abertura)) / (365.25 * 864e5)) : null;
+  const idade = anos == null ? "—" : anos < 1 ? `${Math.max(1, Math.round(anos * 12))} meses` : `${anos.toFixed(1).replace(".", ",")} anos`;
 
   document.getElementById("ficha").innerHTML = `<div class="ficha-anim" style="display:flex;flex-direction:column;gap:22px">
     <header class="topo">
@@ -452,8 +453,8 @@ function renderFicha() {
         <div class="selos"><span class="selo cat-${u.categoria}">${CAT[u.categoria]}</span></div>
       </div>
       <dl class="fatos">
-        <div class="fato"><dt>Tamanho</dt><dd>${u.m2.toLocaleString("pt-BR")} m²</dd></div>
-        <div class="fato"><dt>Inaugurada</dt><dd>${dataBR(u.abertura)}</dd></div>
+        <div class="fato"><dt>Tamanho</dt><dd>${u.m2 ? `${u.m2.toLocaleString("pt-BR")} m²` : "—"}</dd></div>
+        <div class="fato"><dt>Inaugurada</dt><dd>${u.abertura ? dataBR(u.abertura) : "—"}</dd></div>
         <div class="fato"><dt>Aberta há</dt><dd>${idade}</dd></div>
       </dl>
     </header>
