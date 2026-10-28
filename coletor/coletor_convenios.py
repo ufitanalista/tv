@@ -10,6 +10,8 @@ Regras:
   de plano dele (nova ou recorrência) nos últimos 13 meses. Sem venda nesse período = sem convênio.
 - Venda nova = não removida e sem idSaleRecurrency (mesma regra do Forecast). Conta pela data da venda, paga ou não.
 - Convênio parado = teve venda nova nos 13 meses e nenhuma nos últimos 60 dias.
+- Cada venda nova leva 'ativo': o comprador está na lista de ativos de hoje (com ou sem convênio);
+  None quando a unidade não tem nenhum aluno ativo (pré-venda).
 - /api/v1/partnership só devolve 2 convênios, por isso a lista sai das vendas: convênio sem venda não aparece.
 """
 import io, json, os, re, time, unicodedata, zipfile
@@ -154,6 +156,9 @@ def montar(cache, ativos, unidades, hoje):
     uni = lambda b: unidades.get(b) or f'Unidade {b}'
 
     ativos = [a for a in ativos if 'CANCELADA' not in (a.get('BranchName') or '').upper()]
+    ids_ativos = {str(a.get('IdMember') or '').split('.')[0] for a in ativos}
+    # unidade sem nenhum aluno ativo = pré-venda (ex.: Pomerode): quem comprou lá ainda não começou, não "saiu"
+    unid_ativas = {int(float(a['IdBranch'])) for a in ativos if a.get('IdBranch')}
     alunos = []
     for a in ativos:
         u = cache['ultimo'].get(str(a.get('IdMember') or '').split('.')[0])
@@ -187,6 +192,8 @@ def montar(cache, ativos, unidades, hoje):
         'convenios': convs,
         'alunos': alunos,
         'vendas': [{'d': v['d'][:10], 'conv': chave(v['conv']), 'unidade': uni(v['b']), 'consultor': v['consultor'],
+                    'm': v['m'],  # o comprador ainda é aluno ativo hoje? (None = unidade em pré-venda)
+                    'ativo': (str(v['m']) in ids_ativos) if v['b'] in unid_ativas else None,
                     'cliente': v['cliente'], 'plano': v['plano'], 'valor': v['valor'], 'desconto': v['desconto']}
                    for v in sorted(novas, key=lambda v: v['d'], reverse=True)],
     }
