@@ -19,7 +19,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 ORIGEM = os.path.join(AQUI, '..', 'dashboard-tv')
 CASA = os.path.join(os.path.expanduser('~'), '.claude')
 CHAVES = os.path.join(CASA, 'ufit-tvs-chaves.json')
-LISTAS = ['operadores.csv', 'tabulacoes.csv', 'ajustes_vendas.csv', 'vendas_ganhas.csv', 'repetir_vendas.csv', 'tv-unidades.json', 'tv-aulas.json']
+LISTAS = ['operadores.csv', 'tabulacoes.csv', 'ajustes_vendas.csv', 'vendas_ganhas.csv', 'repetir_vendas.csv', 'tv-unidades.json', 'tv-aulas.json', 'empresas_convenio.csv']
 ESTADO = ['vendas_mes.json', 'convenios.json', 'govoice_token.json']
 PAGINAS_TV = {'tv1.html': ('dados.enc', 'DADOS'), 'tv2.html': ('dados.enc', 'DADOS'),
               'tv-unidades.html': ('dados.enc', 'DADOS'), 'convenios.html': ('conv.enc', 'CONV')}

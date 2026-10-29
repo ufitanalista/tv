@@ -80,6 +80,9 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
 .selo.parado, .selo.saiu { background: var(--crit-soft); color: var(--crit); }
 .selo.ok { background: var(--ok-soft); color: var(--ok); }
 .selo.pre { background: var(--info-soft); color: var(--info); }
+.selo.emp { background: var(--brand-soft); color: var(--ink); border: 1px solid var(--bar); font-weight: 700; margin-left: 6px; }
+.selo.emp.parcial { border-style: dashed; }
+tbody tr.comemp > td:first-child { box-shadow: inset 4px 0 0 var(--bar); }
 .grade2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .vazio { color: var(--muted); padding: 18px 0; text-align: center; }
 .barra-mini { display: inline-block; height: 8px; border-radius: 0 4px 4px 0; background: var(--bar); vertical-align: middle; margin-right: 8px; }
@@ -132,6 +135,7 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
   <div class="filtros">
     <select id="f-unidade" aria-label="Unidade"><option value="">Rede (todas as unidades)</option></select>
     <select id="f-periodo" aria-label="Período"></select>
+    <select id="f-empresa" aria-label="Empresa de convênio"><option value="">Todos os convênios</option><option value="com">Só ligados a empresa 🏢</option><option value="sem">Sem empresa ligada</option></select>
     <span class="datas" id="f-datas" hidden>de <input type="date" id="f-de" aria-label="De"> até <input type="date" id="f-ate" aria-label="Até"></span>
     <input id="f-busca" type="search" placeholder="Buscar convênio ou aluno…" aria-label="Buscar">
     <span class="atualizado" id="atualizado"></span>
@@ -165,7 +169,7 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
   var hojeISO = D.atualizadoEm.slice(0, 10);
   var mesAtual = hojeISO.slice(0, 7);
   var desde = D.historicoDesde || hojeISO;
-  var est = { aba: 'ativos', visao: 'rede', unidade: '', busca: '', conv: null, aberto: null,
+  var est = { aba: 'ativos', visao: 'rede', unidade: '', empresa: '', busca: '', conv: null, aberto: null,
               per: 'm:' + mesAtual, de: mesAtual + '-01', ate: hojeISO, ord: { campo: 'alunos', desc: true } };
 
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -244,23 +248,27 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
   }
   function noPeriodo(iv) { return function (v) { return v.d >= iv.de && v.d <= iv.ate; }; }
 
+  // filtro do topo: unidade e "empresa de convênio" (o convênio está ligado a uma empresa no cadastro do EVO)
   function filtrados() {
-    var u = est.unidade;
-    return {
-      alunos: D.alunos.filter(function (a) { return !u || a.unidade === u; }),
-      vendas: D.vendas.filter(function (v) { return !u || v.unidade === u; })
-    };
+    var u = est.unidade, e = est.empresa;
+    function ok(x) { return (!u || x.unidade === u) && (!e || (e === 'com' ? !!x.emp : !x.emp)); }
+    return { alunos: D.alunos.filter(ok), vendas: D.vendas.filter(ok) };
+  }
+  function seloEmp(c) {
+    if (!c.empresa) return '';
+    return '<span class="selo emp' + (c.empParcial ? ' parcial' : '') + '" title="' + (c.empParcial ? 'Ligado a esta empresa só em parte das unidades' : 'Empresa de convênio cadastrada no EVO') + '">🏢 ' + esc(c.empresa) + '</span>';
   }
 
   // resumo por convênio de uma lista de alunos e vendas
   function porConvenio(alunos, vendas, iv) {
     var r = {}, dentro = noPeriodo(iv);
     function pega(k) {
-      return r[k] || (r[k] = { k: k, nome: nomeConv(k), alunos: 0, per: 0, perAtivos: 0, perSaiu: 0, ultima: null, primeira: null, unid: {}, unidVendas: {}, valor: 0 });
+      return r[k] || (r[k] = { k: k, nome: nomeConv(k), alunos: 0, per: 0, perAtivos: 0, perSaiu: 0, ultima: null, primeira: null, unid: {}, unidVendas: {}, valor: 0, emps: {}, semEmp: 0, convs: {} });
     }
-    alunos.forEach(function (a) { var c = pega(a.conv); c.alunos++; c.unid[a.unidade] = (c.unid[a.unidade] || 0) + 1; c.valor += a.valor || 0; });
+    function marca(c, x) { if (x.emp) c.emps[x.emp] = (c.emps[x.emp] || 0) + 1; else c.semEmp++; if (x.convOrig) c.convs[nomeConv(x.convOrig)] = 1; }
+    alunos.forEach(function (a) { var c = pega(a.conv); marca(c, a); c.alunos++; c.unid[a.unidade] = (c.unid[a.unidade] || 0) + 1; c.valor += a.valor || 0; });
     vendas.forEach(function (v) {
-      var c = pega(v.conv);
+      var c = pega(v.conv); marca(c, v);
       if (dentro(v)) { c.per++; if (ativoHoje(v)) c.perAtivos++; if (saiu(v)) c.perSaiu++; c.unidVendas[v.unidade] = (c.unidVendas[v.unidade] || 0) + 1; }
       if (!c.ultima || v.d > c.ultima) c.ultima = v.d;
       if (!c.primeira || v.d < c.primeira) c.primeira = v.d;
@@ -268,6 +276,8 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
     return Object.keys(r).map(function (k) {
       var c = r[k]; c.diasSem = dias(c.ultima); c.parado = c.diasSem != null && c.diasSem >= D.diasParado;
       c.ticket = c.alunos ? c.valor / c.alunos : 0;
+      var es = Object.keys(c.emps).sort(function (a, b) { return c.emps[b] - c.emps[a]; });
+      c.empresa = es[0] || ''; c.empParcial = !!(c.empresa && c.semEmp);
       return c;
     });
   }
@@ -311,7 +321,8 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
     h += linhas.map(function (l) {
       var chave = opc.chave ? opc.chave(l) : l.k, aberta = opc.abre && est.aberto === chave;
       var cls = opc.abre ? 'abre' + (aberta ? ' aberta' : '') : opc.clique ? 'clica' : '';
-      var tr = '<tr' + (cls ? ' class="' + cls + '" data-k="' + esc(l.k) + '" data-chave="' + esc(chave) + '"' : '') + '>' +
+      if (opc.marca && opc.marca(l)) cls += ' comemp';
+      var tr = '<tr' + (cls ? ' class="' + cls.trim() + '" data-k="' + esc(l.k) + '" data-chave="' + esc(chave) + '"' : '') + '>' +
         (opc.abre ? '<td><span class="seta">' + (aberta ? '▾' : '▸') + '</span></td>' : '') +
         colunas.map(function (c) { return '<td class="' + (c.n ? 'n num' : '') + (c.quebra ? ' quebra' : '') + '">' + c.f(l) + '</td>'; }).join('') + '</tr>';
       if (aberta) tr += '<tr class="sub"><td colspan="' + (colunas.length + 1) + '">' + opc.sub(l) + '</td></tr>';
@@ -332,16 +343,19 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
   }
   function buscaConv(c) { return !est.busca || norm(c.nome).indexOf(norm(est.busca)) >= 0; }
   function situacao(c) { return c.parado ? '<span class="selo parado">■ Parado · ' + c.diasSem + ' dias</span>' : c.ultima ? '<span class="selo ok">● Vendendo</span>' : '–'; }
-  function seletorVisao() {
-    return '<div class="seg" id="visao"><button data-v="rede" class="' + (est.visao === 'rede' ? 'ativa' : '') + '">Rede</button><button data-v="unidade" class="' + (est.visao === 'unidade' ? 'ativa' : '') + '">Por unidade</button></div>';
+  function seletorVisao(comEmpresa) {
+    var b = function (v, t) { return '<button data-v="' + v + '" class="' + (est.visao === v ? 'ativa' : '') + '">' + t + '</button>'; };
+    return '<div class="seg" id="visao">' + b('rede', 'Rede') + b('unidade', 'Por unidade') + (comEmpresa ? b('empresa', 'Por empresa 🏢') : '') + '</div>';
   }
+  function marcaEmp(c) { return !!c.empresa; }
 
   // ---------- aba Convênios ativos (alunos ativos hoje)
   function abaAtivos() {
+    if (est.visao === 'empresa') est.visao = 'rede';
     var iv = intervalo(), f = filtrados(), html = '<div class="barra-topo">' + seletorVisao() +
       '<p class="nota">Convênios com pelo menos 1 aluno ativo hoje. Clique num convênio para ver os alunos. "Vendas" conta o período escolhido (' + esc(iv.rot) + ').</p></div>';
     var colunas = [
-      { t: 'Convênio', campo: 'nome', f: function (c) { return '<b>' + esc(c.nome) + '</b>'; } },
+      { t: 'Convênio', campo: 'nome', f: function (c) { return '<b>' + esc(c.nome) + '</b>' + seloEmp(c); } },
       { t: 'Alunos ativos', campo: 'alunos', n: 1, f: function (c) { return '<span class="barra-mini" style="width:' + Math.round(c.alunos / maxA * 80) + 'px"></span>' + n(c.alunos); } },
       { t: 'Valor médio do plano', campo: 'ticket', n: 1, f: function (c) { return reais(c.ticket); } },
       { t: 'Vendas ' + esc(iv.rot), campo: 'per', n: 1, f: function (c) { return n(c.per); } },
@@ -349,12 +363,12 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
       { t: 'Situação', campo: 'diasSem', f: situacao }
     ];
     var maxA = 1;
-    if (est.visao === 'rede') {
+    if (est.visao !== 'unidade') {
       var cs = porConvenio(f.alunos, f.vendas, iv).filter(function (c) { return c.alunos && buscaConv(c); });
       ordenar(cs, est.ord);
       maxA = Math.max.apply(null, cs.map(function (c) { return c.alunos; }).concat(1));
       html += '<div class="cartao"><h2>Convênios ativos' + (est.unidade ? ' · ' + esc(est.unidade) : ' na rede') + '<small>' + n(cs.length) + ' convênios</small></h2>' +
-        tabela(colunas.concat(est.unidade ? [] : [{ t: 'Alunos por unidade', f: function (c) { return quebraUnid(c.unid); }, quebra: 1 }]), cs, { clique: 1, ord: est.ord }) +
+        tabela(colunas.concat(est.unidade ? [] : [{ t: 'Alunos por unidade', f: function (c) { return quebraUnid(c.unid); }, quebra: 1 }]), cs, { clique: 1, ord: est.ord, marca: marcaEmp }) +
         '<p class="nota">Valor médio do plano = valor da última venda de plano dos alunos ativos, com o desconto do convênio (no semestral e no anual é o valor do período inteiro).</p></div>';
     } else {
       var us = porUnidade(f, iv).filter(function (u) { return u.alunos; }).sort(function (a, b) { return b.alunos - a.alunos; });
@@ -364,7 +378,7 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
         ordenar(cs, est.ord);
         maxA = Math.max.apply(null, cs.map(function (c) { return c.alunos; }).concat(1));
         html += '<div class="cartao"><h2>' + esc(u.unidade) + '<small>' + n(u.alunos) + ' alunos ativos em ' + n(cs.length) + ' convênios · ' + n(u.per) + ' vendas ' + esc(iv.rot) + '</small></h2>' +
-          tabela(colunas, cs, { clique: 1, ord: est.ord }) + '</div>';
+          tabela(colunas, cs, { clique: 1, ord: est.ord, marca: marcaEmp }) + '</div>';
       });
       if (!us.length) html += '<div class="vazio">Nada para mostrar com esse filtro.</div>';
     }
@@ -389,13 +403,15 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
   // ---------- aba Vendas por convênio
   function abaVendas() {
     var iv = intervalo(), f = filtrados(), dentro = noPeriodo(iv);
-    var vsPer = f.vendas.filter(dentro);
+    var vsPer = f.vendas.filter(dentro), comEmp = vsPer.filter(function (v) { return v.emp; }).length;
     var html = '<div class="cartao"><h2>Vendas novas com convênio por mês<small>' + (est.unidade ? esc(est.unidade) : 'rede') + ' · clique numa barra para ver o mês · não conta a cobrança mensal da recorrência</small></h2>' + grafico(contarMeses(f.vendas)) + '</div>' +
-      '<div class="barra-topo">' + seletorVisao() + '<p class="nota">' + n(vsPer.length) + ' vendas novas em ' + esc(iv.rot) + '. Clique num convênio para ver cada aluno e se ele ainda está ativo.</p>' +
+      '<div class="barra-topo">' + seletorVisao(true) + '<p class="nota">' + n(vsPer.length) + ' vendas novas em ' + esc(iv.rot) + ' · <b>🏢 ' + n(comEmp) + ' (' + pct(comEmp, vsPer.length) + ') de convênios ligados a empresa</b>. Clique numa linha para ver cada aluno e se ele ainda está ativo.</p>' +
       '<button class="botao prim" id="csv-vendas" style="margin-left:auto">Baixar vendas do período (Excel)</button></div>';
     function colunas(maxV) {
       return [
-        { t: 'Convênio', f: function (c) { return '<b>' + esc(c.nome) + '</b>'; } },
+        est.visao === 'empresa'
+          ? { t: 'Empresa', f: function (c) { return '<b>🏢 ' + esc(c.nome) + '</b><div style="font-size:12px;color:var(--muted);white-space:normal">' + esc(Object.keys(c.convs).sort().join(' · ')) + '</div>'; } }
+          : { t: 'Convênio', f: function (c) { return '<b>' + esc(c.nome) + '</b>' + seloEmp(c); } },
         { t: 'Vendas ' + esc(iv.rot), n: 1, f: function (c) { return '<span class="barra-mini" style="width:' + Math.round(c.per / maxV * 80) + 'px"></span>' + n(c.per); } },
         { t: 'Ainda ativos', n: 1, f: function (c) { var pre = c.per - c.perAtivos - c.perSaiu, base = c.per - pre; return (base ? n(c.perAtivos) + ' <span style="color:var(--muted)">(' + pct(c.perAtivos, base) + ')</span>' : '') + (pre ? ' <span class="selo pre">◆ ' + n(pre) + ' pré-venda</span>' : ''); } },
         { t: 'Saíram', n: 1, f: function (c) { var s = c.perSaiu; return s ? '<span style="color:var(--crit)">' + n(s) + '</span>' : '0'; } },
@@ -405,8 +421,9 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
     function sub(lista) {
       return function (c) {
         var vs = lista.filter(function (v) { return v.conv === c.k && dentro(v) && (!est.busca || norm(c.nome).indexOf(norm(est.busca)) >= 0 || norm(v.cliente).indexOf(norm(est.busca)) >= 0); });
+        var porEmp = est.visao === 'empresa';
         return '<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><b>' + n(vs.length) + ' vendas de ' + esc(c.nome) + ' em ' + esc(iv.rot) + '</b>' +
-          '<button class="botao peq" data-ficha="' + esc(c.k) + '">Abrir a ficha do convênio</button></div>' + tabelaVendas(vs, !est.unidade && est.visao === 'rede');
+          (porEmp ? '' : '<button class="botao peq" data-ficha="' + esc(c.k) + '">Abrir a ficha do convênio</button>') + '</div>' + tabelaVendas(vs, !est.unidade && est.visao !== 'unidade', porEmp);
       };
     }
     function temBusca(lista) {
@@ -415,11 +432,20 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
           lista.some(function (v) { return v.conv === c.k && dentro(v) && norm(v.cliente).indexOf(norm(est.busca)) >= 0; });
       };
     }
-    if (est.visao === 'rede') {
+    if (est.visao === 'empresa') {
+      // agrupa pela empresa do cadastro (só os convênios ligados a uma empresa); convOrig guarda o convênio de cada venda
+      var troca = function (x) { return Object.assign({}, x, { conv: x.emp, convOrig: x.conv }); };
+      var ve = f.vendas.filter(function (v) { return v.emp; }).map(troca), ae = f.alunos.filter(function (a) { return a.emp; }).map(troca);
+      var es = porConvenio(ae, ve, iv).filter(function (c) { return c.per; }).filter(temBusca(ve)).sort(function (a, b) { return b.per - a.per || b.alunos - a.alunos; });
+      var maxE = Math.max.apply(null, es.map(function (c) { return c.per; }).concat(1));
+      html += '<div class="cartao"><h2>Vendas por empresa de convênio' + (est.unidade ? ' · ' + esc(est.unidade) : ' na rede') + '<small>' + n(es.length) + ' empresas venderam · ' + n(vsPer.length - comEmp) + ' vendas de convênios sem empresa ficam fora desta visão</small></h2>' +
+        tabela(colunas(maxE).concat(est.unidade ? [] : [{ t: 'Vendas por unidade', f: function (c) { return quebraUnid(c.unidVendas); }, quebra: 1 }]), es, { abre: 1, sub: sub(ve), chave: function (c) { return 'e|' + c.k; } }) +
+        '<p class="nota">Empresa = a cadastrada na aba "Empresa de Convênio" do EVO e escolhida no campo Empresa do convênio. Uma empresa pode ter vários convênios (ex.: FIT e VIP).</p></div>';
+    } else if (est.visao === 'rede') {
       var cs = porConvenio(f.alunos, f.vendas, iv).filter(function (c) { return c.per; }).filter(temBusca(f.vendas)).sort(function (a, b) { return b.per - a.per || b.alunos - a.alunos; });
       var maxV = Math.max.apply(null, cs.map(function (c) { return c.per; }).concat(1));
       html += '<div class="cartao"><h2>Vendas por convênio' + (est.unidade ? ' · ' + esc(est.unidade) : ' na rede') + '<small>' + n(cs.length) + ' convênios venderam</small></h2>' +
-        tabela(colunas(maxV).concat(est.unidade ? [] : [{ t: 'Vendas por unidade', f: function (c) { return quebraUnid(c.unidVendas); }, quebra: 1 }]), cs, { abre: 1, sub: sub(f.vendas), chave: function (c) { return 'r|' + c.k; } }) + '</div>' +
+        tabela(colunas(maxV).concat(est.unidade ? [] : [{ t: 'Vendas por unidade', f: function (c) { return quebraUnid(c.unidVendas); }, quebra: 1 }]), cs, { abre: 1, sub: sub(f.vendas), chave: function (c) { return 'r|' + c.k; }, marca: marcaEmp }) + '</div>' +
         '<div class="grade2">' + (est.unidade ? '' : bloco('Por unidade · ' + esc(iv.rot), agrupar(vsPer, 'unidade'))) + bloco('Por consultor · ' + esc(iv.rot), agrupar(vsPer, 'consultor')) + '</div>';
     } else {
       porUnidade(f, iv).filter(function (u) { return u.per; }).sort(function (a, b) { return b.per - a.per; }).forEach(function (u) {
@@ -428,7 +454,7 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
         if (!cs.length) return;
         var maxV = Math.max.apply(null, cs.map(function (c) { return c.per; }).concat(1));
         html += '<div class="cartao"><h2>' + esc(u.unidade) + '<small>' + n(u.per) + ' vendas em ' + n(cs.length) + ' convênios · ' + esc(iv.rot) + '</small></h2>' +
-          tabela(colunas(maxV), cs, { abre: 1, sub: sub(lista), chave: function (c) { return u.unidade + '|' + c.k; } }) + '</div>';
+          tabela(colunas(maxV), cs, { abre: 1, sub: sub(lista), chave: function (c) { return u.unidade + '|' + c.k; }, marca: marcaEmp }) + '</div>';
       });
       if (!vsPer.length) html += '<div class="vazio">Nenhuma venda nova com convênio nesse período.</div>';
     }
@@ -449,9 +475,10 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
       { t: 'Vendas', n: 1, f: function (x) { return '<span class="barra-mini" style="width:' + Math.round(x.qtd / m * 60) + 'px"></span>' + n(x.qtd); } }
     ], lista.slice(0, 12)) + (lista.length > 12 ? '<p class="nota">+ ' + (lista.length - 12) + ' outros</p>' : '') + '</div>';
   }
-  function tabelaVendas(lista, comUnidade) {
+  function tabelaVendas(lista, comUnidade, comConvenio) {
     return tabela([
-      { t: 'Data', f: function (v) { return dt(v.d); } },
+      { t: 'Data', f: function (v) { return dt(v.d); } }
+    ].concat(comConvenio ? [{ t: 'Convênio', f: function (v) { return esc(nomeConv(v.convOrig || v.conv)); } }] : []).concat([
       { t: 'Aluno', f: function (v) { return esc(v.cliente); } },
       { t: 'Hoje', f: function (v) { var a = ativoHoje(v); return a ? '<span class="selo ok">● Ativo</span>' : a === null ? '<span class="selo pre">◆ Pré-venda</span>' : '<span class="selo saiu">■ Saiu</span>'; } }
     ].concat(comUnidade !== false ? [{ t: 'Unidade', f: function (v) { return esc(v.unidade); } }] : []).concat([
@@ -459,7 +486,7 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
       { t: 'Valor', n: 1, f: function (v) { return reais(v.valor); } },
       { t: 'Desconto', n: 1, f: function (v) { return v.desconto ? reais(v.desconto) : '–'; } },
       { t: 'Consultor', f: function (v) { return esc(v.consultor); } }
-    ]), lista);
+    ])), lista);
   }
 
   // ---------- aba Avisos
@@ -567,7 +594,7 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
     var parado = ds != null && ds >= D.diasParado;
     var porU = {}; al.forEach(function (a) { porU[a.unidade] = (porU[a.unidade] || 0) + 1; });
     $('conteudo').innerHTML =
-      '<div class="ficha-topo"><button class="botao" id="voltar">← Voltar</button><h2>' + esc(c.nome) + '</h2>' +
+      '<div class="ficha-topo"><button class="botao" id="voltar">← Voltar</button><h2>' + esc(c.nome) + '</h2>' + seloEmp(porConvenio(al, vs, iv)[0] || {}) +
       (parado ? '<span class="selo parado">■ Parado · ' + ds + ' dias sem venda nova</span>' : ult ? '<span class="selo ok">● Vendendo</span>' : '') +
       '<button class="botao prim" id="csv" style="margin-left:auto">Baixar lista de alunos (Excel)</button></div>' +
       '<section class="kpis">' +
@@ -598,8 +625,8 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
   }
   function dinheiro(v) { return (v || 0).toFixed(2).replace('.', ','); }
   function baixarVendas(vs, iv) {
-    baixarCsv('Vendas convênios ' + (est.unidade || 'rede') + ' ' + iv.de + ' a ' + iv.ate, [['Data', 'Aluno', 'Ativo hoje', 'Convênio', 'Unidade', 'Plano', 'Valor', 'Desconto', 'Consultor']].concat(vs.map(function (v) {
-      return [dt(v.d), v.cliente, ativoHoje(v) ? 'Sim' : ativoHoje(v) === null ? 'Pré-venda' : 'Não', nomeConv(v.conv), v.unidade, v.plano, dinheiro(v.valor), dinheiro(v.desconto), v.consultor];
+    baixarCsv('Vendas convênios ' + (est.unidade || 'rede') + ' ' + iv.de + ' a ' + iv.ate, [['Data', 'Aluno', 'Ativo hoje', 'Convênio', 'Empresa do convênio', 'Unidade', 'Plano', 'Valor', 'Desconto', 'Consultor']].concat(vs.map(function (v) {
+      return [dt(v.d), v.cliente, ativoHoje(v) ? 'Sim' : ativoHoje(v) === null ? 'Pré-venda' : 'Não', nomeConv(v.convOrig || v.conv), v.emp || '', v.unidade, v.plano, dinheiro(v.valor), dinheiro(v.desconto), v.consultor];
     })));
   }
   function baixarCsv(nome, linhas) {
@@ -659,6 +686,7 @@ td.quebra { white-space: normal; min-width: 180px; color: var(--muted); font-siz
   document.querySelectorAll('#abas button').forEach(function (b) { b.onclick = function () { trocar(b.dataset.aba); }; });
   $('f-unidade').onchange = function () { est.unidade = this.value; contarAvisos(); trocar(est.aba); };
   $('f-periodo').onchange = function () { mudarPeriodo(this.value); };
+  $('f-empresa').onchange = function () { est.empresa = this.value; est.aberto = null; contarAvisos(); desenhar(true); };
   $('f-de').min = $('f-ate').min = desde; $('f-de').max = $('f-ate').max = hojeISO;
   $('f-de').onchange = $('f-ate').onchange = function () {
     if (!$('f-de').value || !$('f-ate').value) return;

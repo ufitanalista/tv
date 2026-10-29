@@ -13,6 +13,9 @@ Regras:
 - Cada venda nova leva 'ativo': o comprador está na lista de ativos de hoje (com ou sem convênio);
   None quando a unidade não tem nenhum aluno ativo (pré-venda).
 - /api/v1/partnership só devolve 2 convênios, por isso a lista sai das vendas: convênio sem venda não aparece.
+- Empresa de convênio (aba "Empresa de Convênio" do EVO, campo Empresa do convênio): a API não traz.
+  Vem de empresas_convenio.csv (lido do evo3 pelo Chrome, unidade por unidade). Liga pelo id do convênio;
+  convênio que saiu do cadastro liga pelo nome dentro da mesma unidade. Refazer o csv quando cadastrarem empresas.
 """
 import io, json, os, re, time, unicodedata, zipfile
 import xml.etree.ElementTree as ET
@@ -25,6 +28,20 @@ from coletor_core import BRT, http_json, nome_unidade
 MESES_HISTORICO = 13
 DIAS_PARADO = 60
 REVER_DIAS = 3  # a cada coleta relê os últimos dias (venda removida, lançada com atraso)
+
+
+def ler_empresas():
+    """{id_convenio: empresa} e {(id_unidade, chave do nome): empresa}, só dos convênios ligados a uma empresa."""
+    por_id, por_nome = {}, {}
+    try:
+        linhas = coletor_core.ler_csv('empresas_convenio.csv')
+    except OSError:
+        return por_id, por_nome
+    for r in linhas:
+        if r['empresa'].strip():
+            por_id[int(r['id_convenio'])] = r['empresa'].strip()
+            por_nome[(int(r['id_unidade']), chave(r['convenio']))] = r['empresa'].strip()
+    return por_id, por_nome
 
 
 def chave(nome):
@@ -149,6 +166,8 @@ def data_br(s):
 
 def montar(cache, ativos, unidades, hoje):
     vc = cache['vendasConv']
+    emp_id, emp_nome = ler_empresas()
+    empresa = lambda v: emp_id.get(v['idConv']) or emp_nome.get((v['b'], chave(v['conv'])), '')
     nomes = defaultdict(Counter)
     for v in vc.values():
         nomes[chave(v['conv'])][v['conv']] += 1
@@ -167,7 +186,7 @@ def montar(cache, ativos, unidades, hoje):
             continue
         alunos.append({
             'id': v['m'], 'nome': v['cliente'] or a.get('MemberName', ''), 'cel': v['cel'],
-            'conv': chave(v['conv']), 'unidade': uni(int(float(a['IdBranch']))) if a.get('IdBranch') else uni(v['b']),
+            'conv': chave(v['conv']), 'emp': empresa(v), 'unidade': uni(int(float(a['IdBranch']))) if a.get('IdBranch') else uni(v['b']),
             'plano': a.get('ContractDescription') or v['plano'], 'valor': v['valor'], 'desconto': v['desconto'],
             'inicio': data_br(a.get('StartDate')), 'fim': data_br(a.get('EndDate')), 'ultimaVenda': v['d'][:10],
         })
@@ -191,7 +210,7 @@ def montar(cache, ativos, unidades, hoje):
         'diasParado': DIAS_PARADO,
         'convenios': convs,
         'alunos': alunos,
-        'vendas': [{'d': v['d'][:10], 'conv': chave(v['conv']), 'unidade': uni(v['b']), 'consultor': v['consultor'],
+        'vendas': [{'d': v['d'][:10], 'conv': chave(v['conv']), 'emp': empresa(v), 'unidade': uni(v['b']), 'consultor': v['consultor'],
                     'm': v['m'],  # o comprador ainda é aluno ativo hoje? (None = unidade em pré-venda)
                     'ativo': (str(v['m']) in ids_ativos) if v['b'] in unid_ativas else None,
                     'cliente': v['cliente'], 'plano': v['plano'], 'valor': v['valor'], 'desconto': v['desconto']}
