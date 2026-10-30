@@ -140,7 +140,7 @@
   </div>
 </div>
 <div id="som-aviso" style="display:none">🔇 Som desligado: aperte <b>OK</b> no controle para ativar o sino das vendas</div>
-<div id="mega"><div class="caixa"><div class="t">🏆 BATEU A MARCA! 🏆</div><div class="n" id="mega-nome"></div><div class="v" id="mega-qtd"></div></div></div>
+<div id="mega"><div class="caixa"><div class="t" id="mega-tit">🏆 BATEU A MARCA! 🏆</div><div class="n" id="mega-nome"></div><div class="v" id="mega-qtd"></div></div></div>
 <div id="festa"><div class="caixa"><div class="t">🎉 NOVA VENDA 🎉</div><div class="n" id="festa-nome"></div><div class="p" id="festa-plano"></div><div class="v" id="festa-valor"></div></div></div>
 
 <script src="cripto.js" data-arquivo="dados.enc" data-var="DADOS"></script>
@@ -322,6 +322,7 @@ if (D().exemplo) {
 // ---------- Sons (gerados pela própria página, sem arquivos) ----------
 // Os navegadores só liberam som depois de uma interação: aperta OK no controle uma vez.
 var META_INDIVIDUAL = 10;   // vendas de UM operador no dia que disparam o "barulhão"
+var META_EQUIPE = 10;       // venda nº X da equipe no dia: "PARABÉNS, EQUIPE!" depois do anúncio da venda
 var audio = null;
 function somLiberado() { return !!audio && audio.state === 'running'; }
 function ativarSom() {
@@ -330,7 +331,7 @@ function ativarSom() {
     if (audio.state !== 'running') audio.resume();
   } catch (e) { return; }
   setTimeout(function () {
-    if (somLiberado()) { tom(1320, 0, 0.18, 0.15, 'sine'); avisoSom(); if (/testar-som/.test(location.hash)) testarSom(); }
+    if (somLiberado()) { tom(1320, 0, 0.18, 0.15, 'sine'); avisoSom(); if (/testar-som/.test(location.hash)) testarSom(); else if (window.DADOS) repetirPedido(); }
   }, 150);
 }
 function avisoSom() { document.getElementById('som-aviso').style.display = somLiberado() ? 'none' : ''; }
@@ -405,8 +406,10 @@ function proxima() {
     sino(); confete(120, SEGUNDOS_COMEMORACAO); seg = SEGUNDOS_COMEMORACAO;
     setTimeout(function () { document.getElementById('festa').classList.remove('on'); }, seg * 1000);
   } else {
-    document.getElementById('mega-nome').textContent = item.nome;
-    document.getElementById('mega-qtd').textContent = item.qtd + ' VENDAS HOJE!';
+    // 'meta' = um operador bateu a marca do dia; 'equipe' = a equipe chegou na venda nº META_EQUIPE do dia
+    document.getElementById('mega-tit').textContent = item.tipo === 'equipe' ? '🎉 PARABÉNS, EQUIPE! 🎉' : '🏆 BATEU A MARCA! 🏆';
+    document.getElementById('mega-nome').textContent = item.tipo === 'equipe' ? item.qtd + 'ª VENDA' : item.nome;
+    document.getElementById('mega-qtd').textContent = item.tipo === 'equipe' ? 'DO DIA!!!' : item.qtd + ' VENDAS HOJE!';
     document.getElementById('mega').classList.add('on');
     barulhao(); confete(260, 20); seg = 20;
     setTimeout(function () { document.getElementById('mega').classList.remove('on'); }, seg * 1000);
@@ -433,6 +436,22 @@ function conferirNovas() {
   anteriores = atuais;
   conferirMetas(!conferirMetas.iniciado); // 1ª leitura: só anota quem já tinha batido
   conferirMetas.iniciado = true;
+  repetirPedido();
+  proxima();
+}
+// repetição pedida pelo usuário (30/10/2026): venda 620066 da Dayane (10ª do dia) + parabéns da equipe.
+// Toca uma vez por TV, só com o som liberado (depois do OK no controle) e até o horário de "ate".
+var REPETIR = { venda: 620066, equipe: true, ate: '2026-10-30T23:59:00-03:00' };
+function repetirPedido() {
+  if (!REPETIR || !somLiberado() || Date.now() > new Date(REPETIR.ate).getTime()) return;
+  var chave = 'ufit-repetido-' + REPETIR.venda, u;
+  try { if (localStorage.getItem(chave) === '1') return; } catch (e) {}
+  (D().vendasRecentes || D().ultimasVendas).forEach(function (v) { if (v.id === REPETIR.venda) u = v; });
+  if (!u) return;
+  try { localStorage.setItem(chave, '1'); } catch (e) {}
+  fila.push({ tipo: 'venda', u: u });
+  if (REPETIR.equipe) fila.push({ tipo: 'equipe', qtd: META_EQUIPE });
+  REPETIR = null;
   proxima();
 }
 // barulhão uma vez por operador por dia; ao abrir a página, quem já tinha batido não toca de novo
@@ -448,11 +467,21 @@ function conferirMetas(silencioso) {
       if (!silencioso) fila.push({ tipo: 'meta', nome: o.govoice, qtd: o.vendasHoje.qtd });
     }
   });
+  // parabéns para a equipe: uma vez por dia, entra na fila depois do anúncio da própria venda
+  var chaveEquipe = 'ufit-equipe-' + hoje, feitoEquipe = metaFeita[chaveEquipe];
+  try { feitoEquipe = feitoEquipe || localStorage.getItem(chaveEquipe) === '1'; } catch (e) {}
+  var total = vendedores().reduce(function (s, o) { return s + o.vendasHoje.qtd; }, 0);
+  if (total >= META_EQUIPE && !feitoEquipe) {
+    metaFeita[chaveEquipe] = true;
+    try { localStorage.setItem(chaveEquipe, '1'); } catch (e) {}
+    if (!silencioso) fila.push({ tipo: 'equipe', qtd: META_EQUIPE });
+  }
 }
 // teste: abrir tv2.html#testar-som e apertar OK → toca o sino e depois o barulhão
 function testarSom() {
   fila.push({ tipo: 'venda', u: { operador: 'Teste', plano: 'Plano de teste', unidade: 'UFit', valor: 99.9 } });
   fila.push({ tipo: 'meta', nome: 'Teste', qtd: META_INDIVIDUAL });
+  fila.push({ tipo: 'equipe', qtd: META_EQUIPE });
   proxima();
 }
 
