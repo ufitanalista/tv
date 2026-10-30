@@ -331,7 +331,7 @@ function ativarSom() {
     if (audio.state !== 'running') audio.resume();
   } catch (e) { return; }
   setTimeout(function () {
-    if (somLiberado()) { tom(1320, 0, 0.18, 0.15, 'sine'); avisoSom(); if (/testar-som/.test(location.hash)) testarSom(); else if (window.DADOS) repetirPedido(); }
+    if (somLiberado()) { tom(1320, 0, 0.18, 0.15, 'sine'); avisoSom(); if (/testar-som/.test(location.hash)) testarSom(); }
   }, 150);
 }
 function avisoSom() { document.getElementById('som-aviso').style.display = somLiberado() ? 'none' : ''; }
@@ -440,19 +440,23 @@ function conferirNovas() {
   proxima();
 }
 // repetição pedida pelo usuário (30/10/2026): venda 620066 da Dayane (10ª do dia) + parabéns da equipe.
-// Toca uma vez por TV, só com o som liberado (depois do OK no controle) e até o horário de "ate".
+// Toca uma vez por TV, assim que a página abre (sem esperar o OK), até o horário de "ate".
+// O som sai se o navegador da TV deixar tocar sem botão; a tela aparece de qualquer jeito.
 var REPETIR = { venda: 620066, equipe: true, ate: '2026-10-30T23:59:00-03:00' };
 function repetirPedido() {
-  if (!REPETIR || !somLiberado() || Date.now() > new Date(REPETIR.ate).getTime()) return;
-  var chave = 'ufit-repetido-' + REPETIR.venda, u;
+  if (!REPETIR || Date.now() > new Date(REPETIR.ate).getTime()) return;
+  var chave = 'ufit-repetido-' + REPETIR.venda, u, r = REPETIR;
   try { if (localStorage.getItem(chave) === '1') return; } catch (e) {}
-  (D().vendasRecentes || D().ultimasVendas).forEach(function (v) { if (v.id === REPETIR.venda) u = v; });
+  (D().vendasRecentes || D().ultimasVendas).forEach(function (v) { if (v.id === r.venda) u = v; });
   if (!u) return;
   try { localStorage.setItem(chave, '1'); } catch (e) {}
-  fila.push({ tipo: 'venda', u: u });
-  if (REPETIR.equipe) fila.push({ tipo: 'equipe', qtd: META_EQUIPE });
   REPETIR = null;
-  proxima();
+  ativarSom(); // tenta liberar o som; dá um tempo para o navegador responder antes do sino
+  setTimeout(function () {
+    fila.push({ tipo: 'venda', u: u });
+    if (r.equipe) fila.push({ tipo: 'equipe', qtd: META_EQUIPE });
+    proxima();
+  }, 500);
 }
 // barulhão uma vez por operador por dia; ao abrir a página, quem já tinha batido não toca de novo
 var metaFeita = {};
