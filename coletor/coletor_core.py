@@ -270,10 +270,18 @@ def vendas_do_mes(get, guarda, ids, hoje):
             c['dias'].append(dia.isoformat())
             mudou = True
         dia += timedelta(days=1)
-    # vendas de dias fechados ainda sem pagamento: confere de novo se o cliente já pagou ou se a venda foi excluída
-    excluidas = set()
-    for k, v in enumerate(c['vendas']):
-        if not v.get('pago'):
+    c['vendas'], m2 = reconferir(get, c['vendas'], ids)
+    if mudou or m2:
+        guarda.gravar('vendas_mes', c)
+    return c['vendas']
+
+
+def reconferir(get, vendas, ids, desde=''):
+    """Vendas de dias fechados ainda sem pagamento: confere de novo se o cliente já pagou ou se a venda foi excluída.
+    `desde` (AAAA-MM-DD): só as lançadas a partir desse dia. Devolve (vendas, mudou)."""
+    vendas, mudou, excluidas = list(vendas), False, set()
+    for k, v in enumerate(vendas):
+        if not v.get('pago') and v.get('venda', '')[:10] >= desde:
             try:
                 s = get(f"/api/v2/sales/{v['id']}?showReceivables=true")
             except urllib.error.HTTPError as e:
@@ -291,13 +299,50 @@ def vendas_do_mes(get, guarda, ids, hoje):
                 continue
             novo = resumir([s], ids)
             if novo and novo[0] != v:
-                c['vendas'][k], mudou = novo[0], True
+                vendas[k], mudou = novo[0], True
     if excluidas:
         print('vendas excluídas no EVO, saem do painel:', sorted(excluidas))
-        c['vendas'], mudou = [v for v in c['vendas'] if v['id'] not in excluidas], True
-    if mudou:
-        guarda.gravar('vendas_mes', c)
-    return c['vendas']
+        vendas, mudou = [v for v in vendas if v['id'] not in excluidas], True
+    return vendas, mudou
+
+
+# Histórico para o filtro de período da TV 2 (DP calcula a comissão): vendas dos meses anteriores,
+# desde HISTORICO_DESDE. Dia fechado é buscado uma vez; na 1ª carga vai aos poucos (DIAS_POR_CICLO por coleta).
+HISTORICO_DESDE = '2026-09-01'
+DIAS_POR_CICLO = 15
+
+
+def vendas_historico(get, guarda, ids, hoje):
+    """Vendas de HISTORICO_DESDE até o fim do mês passado (o mês atual vem de vendas_do_mes).
+    Guarda os operadores que já passaram pela lista: quem sai continua no histórico.
+    Devolve (vendas, dias que ainda faltam buscar)."""
+    regra = 'comissionado-pago-cliente'
+    c = guarda.ler('vendas_hist') or {}
+    if c.get('regra') != regra or c.get('desde') != HISTORICO_DESDE:
+        c = {'regra': regra, 'desde': HISTORICO_DESDE, 'ids': [], 'dias': [], 'vendas': []}
+    mudou = False
+    if set(ids) - set(c['ids']):  # operador novo: busca os dias de novo para trazer as vendas dele
+        c['ids'], c['dias'], mudou = sorted(set(c['ids']) | set(ids)), [], True
+    todos = set(c['ids'])
+    fim = hoje.replace(day=1)
+    dia = datetime.strptime(HISTORICO_DESDE, '%Y-%m-%d').date()
+    faltam, feitos = 0, 0
+    while dia < fim:
+        if dia.isoformat() not in c['dias']:
+            if feitos < DIAS_POR_CICLO:
+                por_id = {v['id']: v for v in c['vendas']}
+                por_id.update({v['id']: v for v in vendas_do_dia(get, dia.isoformat(), todos)})
+                c['vendas'] = list(por_id.values())
+                c['dias'].append(dia.isoformat())
+                feitos, mudou = feitos + 1, True
+            else:
+                faltam += 1
+        dia += timedelta(days=1)
+    # venda do fim do mês paga depois: reconfere as dos últimos 60 dias
+    c['vendas'], m2 = reconferir(get, c['vendas'], todos, (hoje - timedelta(days=60)).isoformat())
+    if mudou or m2:
+        guarda.gravar('vendas_hist', c)
+    return c['vendas'], faltam
 
 
 def nome_unidade(n):
@@ -374,9 +419,14 @@ def coletar(cred_evo, cred_gv, guarda):
     unidades = {b['idBranch']: nome_unidade(b.get('name')) for b in get('/api/v1/configuration')}
     mes = vendas_do_mes(get, guarda, ids, hoje)
     dia = vendas_do_dia(get, hoje.isoformat(), ids)
+    try:
+        hist, hist_faltam = vendas_historico(get, guarda, ids, hoje)
+    except Exception as e:  # não derruba as TVs
+        print('histórico de vendas indisponível:', type(e).__name__, str(e)[:200])
+        hist, hist_faltam = (guarda.ler('vendas_hist') or {}).get('vendas', []), None
     aj = ajustes()  # vale também para as vendas que já estavam no cache
     gn = ganhas()
-    for v in dia + mes:
+    for v in dia + mes + hist:
         v['idEmployee'] = aj.get(v['id'], v['idEmployee'])
         if not v['pago'] and v['id'] in gn:  # quando o EVO der o pagamento, vale a data do EVO
             v.update(pago=True, vencida=False, quando=gn[v['id']])
@@ -394,6 +444,9 @@ def coletar(cred_evo, cred_gv, guarda):
         o['vendasMes'] = {'qtd': len(vm), 'valor': round(sum(v['valor'] for v in vm), 2)}
         if i:
             nome_por_id[i] = o['govoice']
+    for o in ops_csv:  # quem não está logado hoje (ou saiu da lista) também aparece com nome no histórico
+        if (o.get('id_evo') or '').strip().isdigit():
+            nome_por_id.setdefault(int(o['id_evo']), (o.get('nome_govoice') or o.get('nome_evo') or '').strip())
 
     def item(v):
         return {'id': v['id'], 'operador': nome_por_id.get(v['idEmployee'], ''), 'plano': v['plano'], 'cliente': v.get('cliente', ''),
@@ -410,6 +463,12 @@ def coletar(cred_evo, cred_gv, guarda):
         'vendasRecentes': [item(v) for v in recentes[:20]],   # aba "Últimas vendas"
         'vendasPendentes': [item(v) for v in pendentes],      # aba "Vendas pendentes"
     })
+    # filtro de período da TV 2 (comissão): todas as vendas pagas desde HISTORICO_DESDE, pela data do pagamento
+    todas = {v['id']: v for v in hist + mes + dia}  # o mais recente vale (dia > mês > histórico)
+    dados['historicoVendas'] = [dict(item(v), idEmployee=v['idEmployee'], operador=item(v)['operador'] or f"Consultor {v['idEmployee']}")
+                                for v in sorted((v for v in todas.values() if v['pago']), key=lambda v: v['quando'], reverse=True)]
+    dados['historicoDesde'] = HISTORICO_DESDE
+    dados['historicoFaltamDias'] = hist_faltam
     try:
         dados['tvUnidades'] = coletar_unidades(get)
     except Exception as e:  # não derruba as outras TVs

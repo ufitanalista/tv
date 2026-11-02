@@ -110,6 +110,43 @@
   @keyframes pulsa { from { transform: scale(.96); } to { transform: scale(1.04); } }
   .confete { position: fixed; top: -20px; width: 14px; height: 22px; z-index: 11; animation: cai linear forwards; }
   @keyframes cai { to { transform: translateY(1150px) rotate(720deg); } }
+
+  /* Filtro de período (DP: comissão). Fica fora do palco: tamanho normal de computador, com rolagem. */
+  #btn-periodo { font: 700 20px Montserrat, sans-serif; background: var(--cartao-2); color: var(--texto-2); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 18px; cursor: pointer; }
+  #btn-periodo:hover { color: var(--texto); border-color: var(--amarelo); }
+  #pp { position: fixed; inset: 0; z-index: 40; background: var(--fundo, #0b0a09); color: var(--texto); overflow-y: auto; display: none; font-family: Montserrat, sans-serif; }
+  #pp.on { display: block; }
+  #pp .in { max-width: 1200px; margin: 0 auto; padding: 24px 16px 60px; }
+  #pp .cab { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  #pp h2 { font-size: 24px; font-weight: 800; flex: 1; min-width: 240px; }
+  #pp h2 small { display: block; font-size: 13px; font-weight: 600; color: var(--texto-3); margin-top: 4px; }
+  #pp button, #pp input, #pp select { font: 600 15px Montserrat, sans-serif; color: var(--texto); background: var(--cartao-2); border: 1px solid var(--linha); border-radius: 8px; padding: 8px 12px; }
+  #pp button { cursor: pointer; }
+  #pp button:hover { border-color: var(--amarelo); }
+  #pp button.pri { background: var(--amarelo); color: #111; border-color: var(--amarelo); font-weight: 800; }
+  #pp input[type=date] { color-scheme: dark; }
+  #pp .filtros { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin: 20px 0 8px; background: var(--cartao); border-radius: 12px; padding: 14px; }
+  #pp .filtros label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--texto-2); text-transform: uppercase; }
+  #pp .atalhos { display: flex; gap: 6px; flex-wrap: wrap; }
+  #pp .aviso { font-size: 14px; color: var(--pausa, #fab219); margin: 8px 0; }
+  #pp .nota { font-size: 13px; color: var(--texto-3); margin: 6px 0 18px; }
+  #pp .tot { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  #pp .tot div { background: var(--cartao); border-radius: 12px; padding: 14px; border-top: 4px solid var(--amarelo); }
+  #pp .tot span { display: block; font-size: 12px; font-weight: 700; color: var(--texto-2); text-transform: uppercase; }
+  #pp .tot b { font-size: 26px; font-weight: 800; color: var(--amarelo); font-variant-numeric: tabular-nums; }
+  #pp h3 { font-size: 17px; font-weight: 800; margin: 22px 0 8px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  #pp .tab { overflow-x: auto; }
+  #pp table { width: 100%; border-collapse: collapse; border-spacing: 0; }
+  #pp th { font-size: 12px; padding: 8px 10px; text-align: left; color: var(--texto-2); border-bottom: 1px solid var(--linha); white-space: nowrap; }
+  #pp td { font-size: 14px; font-weight: 600; padding: 8px 10px; background: none; border-radius: 0; text-align: left; color: var(--texto); border-bottom: 1px solid var(--cartao-2); white-space: nowrap; width: auto; }
+  #pp td:first-child { text-align: left; color: var(--texto); width: auto; font-weight: 700; }
+  #pp .n { text-align: right; font-variant-numeric: tabular-nums; }
+  #pp td.v { color: var(--amarelo); font-weight: 800; }
+  #pp tr.sel td { background: #2a2410; }
+  #pp tbody.ops tr { cursor: pointer; }
+  #pp tbody.ops tr:hover td { background: var(--cartao); }
+  #pp tfoot td { font-weight: 800; border-top: 2px solid var(--linha); }
+  #pp .vazio { padding: 30px; text-align: center; color: var(--texto-2); background: var(--cartao); border-radius: 12px; }
 </style>
 </head>
 <body>
@@ -118,6 +155,7 @@
     <img src="logo_ufit.png" alt="UFit">
     <h1>RANKING DE VENDAS · <span id="periodo">HOJE</span></h1>
     <div class="direita">
+      <button id="btn-periodo" type="button" title="Vendas por período (comissão)">📅 Período</button>
       <span class="selo-exemplo" id="selo" style="display:none">DADOS DE EXEMPLO</span>
       <div class="data" id="data"></div>
       <div class="relogio" id="relogio"></div>
@@ -142,6 +180,28 @@
 <div id="som-aviso" style="display:none">🔇 Som desligado: aperte <b>OK</b> no controle para ativar o sino das vendas</div>
 <div id="mega"><div class="caixa"><div class="t" id="mega-tit">🏆 BATEU A MARCA! 🏆</div><div class="n" id="mega-nome"></div><div class="v" id="mega-qtd"></div></div></div>
 <div id="festa"><div class="caixa"><div class="t">🎉 NOVA VENDA 🎉</div><div class="n" id="festa-nome"></div><div class="p" id="festa-plano"></div><div class="v" id="festa-valor"></div></div></div>
+<div id="pp">
+  <div class="in">
+    <div class="cab">
+      <h2>📅 Vendas por período<small>para o cálculo de comissão · só vendas pagas, pela data do pagamento (mesma regra do ranking)</small></h2>
+      <button type="button" id="pp-fechar">✕ Fechar</button>
+    </div>
+    <div class="filtros">
+      <label>De <input type="date" id="pp-de"></label>
+      <label>Até <input type="date" id="pp-ate"></label>
+      <label>Consultor <select id="pp-op"><option value="">Todos</option></select></label>
+      <div class="atalhos">
+        <button type="button" data-at="mes">Este mês</button>
+        <button type="button" data-at="passado">Mês passado</button>
+        <button type="button" data-at="semana">Últimos 7 dias</button>
+        <button type="button" data-at="hoje">Hoje</button>
+      </div>
+      <button type="button" class="pri" id="pp-csv">⬇ Baixar planilha</button>
+    </div>
+    <div class="aviso" id="pp-aviso"></div>
+    <div id="pp-corpo"></div>
+  </div>
+</div>
 
 <script src="cripto.js" data-arquivo="dados.enc" data-var="DADOS"></script>
 <script src="nosleep.min.js"></script>
@@ -489,12 +549,100 @@ function testarSom() {
   proxima();
 }
 
+// ---------- Filtro de período (DP: comissão) ----------
+// Botão "📅 Período" no topo, ou tv2.html#periodo. Usa D().historicoVendas: vendas pagas desde D().historicoDesde.
+var PP = (function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function br(s) { return s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4); }
+  function dataHora(s) { return br(s) + ' ' + s.slice(11, 16); }
+  function moeda(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+  function lista() { return D().historicoVendas || []; }
+  function atalho(q) {
+    var h = new Date(), de, ate = h;
+    if (q === 'mes') de = new Date(h.getFullYear(), h.getMonth(), 1);
+    else if (q === 'passado') { de = new Date(h.getFullYear(), h.getMonth() - 1, 1); ate = new Date(h.getFullYear(), h.getMonth(), 0); }
+    else if (q === 'semana') de = new Date(h.getFullYear(), h.getMonth(), h.getDate() - 6);
+    else de = h;
+    $('pp-de').value = iso(de); $('pp-ate').value = iso(ate); desenhar();
+  }
+  function filtradas(comOp) {
+    var de = $('pp-de').value, ate = $('pp-ate').value, op = $('pp-op').value;
+    return lista().filter(function (v) {
+      var d = v.quando.slice(0, 10);
+      return (!de || d >= de) && (!ate || d <= ate) && (!comOp || !op || v.operador === op);
+    });
+  }
+  function desenhar() {
+    if (!$('pp').classList.contains('on')) return;
+    var de = $('pp-de').value, ate = $('pp-ate').value, op = $('pp-op').value;
+    // opções de consultor: todos que aparecem no histórico
+    var nomes = {}; lista().forEach(function (v) { nomes[v.operador] = 1; });
+    var sel = $('pp-op'), ops = Object.keys(nomes).sort();
+    if (sel.options.length - 1 !== ops.length) {
+      sel.innerHTML = '<option value="">Todos</option>' + ops.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('');
+      sel.value = nomes[op] ? op : '';
+    }
+    var desde = D().historicoDesde, avisos = [];
+    if (!D().historicoVendas) avisos.push('O histórico ainda não chegou nesta tela. Aguarde a próxima atualização (até 5 min).');
+    else if (D().historicoFaltamDias) avisos.push('Carregando o histórico: faltam ' + D().historicoFaltamDias + ' dia(s). Os números ainda podem subir.');
+    if (desde && de && de < desde) avisos.push('O histórico começa em ' + br(desde) + ': antes disso não há dados.');
+    if (de && ate && de > ate) avisos.push('A data "De" está depois da data "Até".');
+    $('pp-aviso').innerHTML = avisos.map(esc).join('<br>');
+
+    var todas = filtradas(false), vs = op ? todas.filter(function (v) { return v.operador === op; }) : todas;
+    var por = {};
+    todas.forEach(function (v) { var p = por[v.operador] = por[v.operador] || { qtd: 0, valor: 0 }; p.qtd++; p.valor += v.valor; });
+    var linhas = Object.keys(por).sort(function (a, b) { return por[b].valor - por[a].valor || por[b].qtd - por[a].qtd; });
+    var tq = vs.length, tv = vs.reduce(function (s, v) { return s + v.valor; }, 0);
+    var per = (de ? br(de) : 'início') + ' a ' + (ate ? br(ate) : 'hoje');
+    var h = '<div class="nota">Período: <b>' + per + '</b>' + (op ? ' · consultor: <b>' + esc(op) + '</b>' : '') + '</div>' +
+      '<div class="tot"><div><span>Vendas pagas</span><b>' + tq + '</b></div><div><span>Faturado</span><b>' + moeda(tv) + '</b></div>' +
+      '<div><span>Ticket médio</span><b>' + (tq ? moeda(tv / tq) : '—') + '</b></div><div><span>Consultores com venda</span><b>' + linhas.length + '</b></div></div>';
+    if (!todas.length) { $('pp-corpo').innerHTML = h + '<div class="vazio">Nenhuma venda paga neste período.</div>'; return; }
+    h += '<h3>Por consultor <small style="font-size:12px;color:var(--texto-3);font-weight:600">clique numa linha para ver só as vendas dele(a)</small></h3><div class="tab"><table><thead><tr><th>Consultor</th><th class="n">Vendas</th><th class="n">Faturado</th><th class="n">Ticket médio</th></tr></thead><tbody class="ops">' +
+      linhas.map(function (n) {
+        var p = por[n];
+        return '<tr data-op="' + esc(n) + '" class="' + (n === op ? 'sel' : '') + '"><td>' + esc(n) + '</td><td class="n">' + p.qtd + '</td><td class="n v">' + moeda(p.valor) + '</td><td class="n">' + moeda(p.valor / p.qtd) + '</td></tr>';
+      }).join('') +
+      '</tbody><tfoot><tr><td>Total</td><td class="n">' + todas.length + '</td><td class="n v">' + moeda(todas.reduce(function (s, v) { return s + v.valor; }, 0)) + '</td><td></td></tr></tfoot></table></div>';
+    h += '<h3>Vendas (' + vs.length + ')</h3><div class="tab"><table><thead><tr><th>Pago em</th><th>Lançada em</th><th>Consultor</th><th>Cliente</th><th>Plano</th><th>Unidade</th><th class="n">Valor</th><th class="n">Nº venda</th></tr></thead><tbody>' +
+      vs.map(function (v) {
+        return '<tr><td>' + dataHora(v.quando) + '</td><td>' + dataHora(v.venda) + '</td><td>' + esc(v.operador) + '</td><td>' + esc(v.cliente || '—') + '</td><td>' + esc(v.plano) + '</td><td>' + esc(v.unidade) + '</td><td class="n v">' + moeda(v.valor) + '</td><td class="n">' + v.id + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+    $('pp-corpo').innerHTML = h;
+  }
+  function csv() {
+    var vs = filtradas(true), q = function (t) { return '"' + String(t == null ? '' : t).replace(/"/g, '""') + '"'; };
+    var linhas = [['Pago em', 'Lançada em', 'Consultor', 'Cliente', 'Plano', 'Unidade', 'Valor', 'Nº venda'].map(q).join(';')].concat(vs.map(function (v) {
+      return [dataHora(v.quando), dataHora(v.venda), v.operador, v.cliente, v.plano, v.unidade, v.valor.toFixed(2).replace('.', ','), v.id].map(q).join(';');
+    }));
+    var a = document.createElement('a'), nome = 'Vendas ' + br($('pp-de').value || D().historicoDesde || '').replace(/\//g, '-') + ' a ' + br($('pp-ate').value || iso(new Date())).replace(/\//g, '-') + ($('pp-op').value ? ' - ' + $('pp-op').value : '') + '.csv';
+    a.href = URL.createObjectURL(new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = nome; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function abrir() { $('pp').classList.add('on'); if (!$('pp-de').value) atalho('mes'); else desenhar(); }
+  function fechar() { $('pp').classList.remove('on'); if (/periodo/.test(location.hash)) history.replaceState(null, '', location.pathname); }
+  $('btn-periodo').addEventListener('click', abrir);
+  $('pp-fechar').addEventListener('click', fechar);
+  $('pp-csv').addEventListener('click', csv);
+  ['pp-de', 'pp-ate', 'pp-op'].forEach(function (id) { $(id).addEventListener('change', desenhar); });
+  document.querySelectorAll('#pp [data-at]').forEach(function (b) { b.addEventListener('click', function () { atalho(b.dataset.at); }); });
+  $('pp-corpo').addEventListener('click', function (e) {
+    var tr = e.target.closest('tbody.ops tr'); if (!tr) return;
+    $('pp-op').value = $('pp-op').value === tr.dataset.op ? '' : tr.dataset.op; desenhar();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('pp').classList.contains('on')) fechar(); });
+  if (/periodo/.test(location.hash)) abrir();
+  return { desenhar: desenhar };
+})();
+
 TV.iniciar();
 render();
 conferirNovas();
 avisoSom();
 TV.rodizio(SEGUNDOS_POR_TELA, function (i) { telaAtual = i; render(); });
-TV.recarregar(20, function () { render(); conferirNovas(); });
+TV.recarregar(20, function () { render(); conferirNovas(); PP.desenhar(); });
 </script>
 </body>
 </html>
