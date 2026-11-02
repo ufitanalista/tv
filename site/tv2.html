@@ -190,6 +190,7 @@
       <label>De <input type="date" id="pp-de"></label>
       <label>Até <input type="date" id="pp-ate"></label>
       <label>Consultor <select id="pp-op"><option value="">Todos</option></select></label>
+      <label>Plano <select id="pp-pl" style="max-width:340px"><option value="">Todos</option></select></label>
       <div class="atalhos">
         <button type="button" data-at="mes">Este mês</button>
         <button type="button" data-at="passado">Mês passado</button>
@@ -566,16 +567,29 @@ var PP = (function () {
     else de = h;
     $('pp-de').value = iso(de); $('pp-ate').value = iso(ate); desenhar();
   }
-  function filtradas(comOp) {
-    var de = $('pp-de').value, ate = $('pp-ate').value, op = $('pp-op').value;
+  // filtra pelo período e, conforme pedido, pelo plano e pelo consultor
+  function filtradas(comPlano, comOp) {
+    var de = $('pp-de').value, ate = $('pp-ate').value, op = $('pp-op').value, pl = $('pp-pl').value;
     return lista().filter(function (v) {
       var d = v.quando.slice(0, 10);
-      return (!de || d >= de) && (!ate || d <= ate) && (!comOp || !op || v.operador === op);
+      return (!de || d >= de) && (!ate || d <= ate) && (!comPlano || !pl || v.plano === pl) && (!comOp || !op || v.operador === op);
     });
+  }
+  // opções de plano: os planos vendidos no período (e do consultor escolhido), do mais vendido para o menos
+  function opcoesPlano() {
+    var sel = $('pp-pl'), atual = sel.value, cont = {};
+    filtradas(false, true).forEach(function (v) { cont[v.plano] = (cont[v.plano] || 0) + 1; });
+    if (atual && !cont[atual]) cont[atual] = 0;
+    var pls = Object.keys(cont).sort(function (a, b) { return cont[b] - cont[a] || a.localeCompare(b); });
+    sel.innerHTML = '<option value="">Todos (' + pls.length + ' planos)</option>' + pls.map(function (p) {
+      return '<option value="' + esc(p) + '">' + esc(p) + ' (' + cont[p] + ')</option>';
+    }).join('');
+    sel.value = atual;
   }
   function desenhar() {
     if (!$('pp').classList.contains('on')) return;
-    var de = $('pp-de').value, ate = $('pp-ate').value, op = $('pp-op').value;
+    opcoesPlano();
+    var de = $('pp-de').value, ate = $('pp-ate').value, op = $('pp-op').value, pl = $('pp-pl').value;
     // opções de consultor: todos que aparecem no histórico
     var nomes = {}; lista().forEach(function (v) { nomes[v.operador] = 1; });
     var sel = $('pp-op'), ops = Object.keys(nomes).sort();
@@ -590,13 +604,13 @@ var PP = (function () {
     if (de && ate && de > ate) avisos.push('A data "De" está depois da data "Até".');
     $('pp-aviso').innerHTML = avisos.map(esc).join('<br>');
 
-    var todas = filtradas(false), vs = op ? todas.filter(function (v) { return v.operador === op; }) : todas;
+    var todas = filtradas(true, false), vs = op ? todas.filter(function (v) { return v.operador === op; }) : todas;
     var por = {};
     todas.forEach(function (v) { var p = por[v.operador] = por[v.operador] || { qtd: 0, valor: 0 }; p.qtd++; p.valor += v.valor; });
     var linhas = Object.keys(por).sort(function (a, b) { return por[b].valor - por[a].valor || por[b].qtd - por[a].qtd; });
     var tq = vs.length, tv = vs.reduce(function (s, v) { return s + v.valor; }, 0);
     var per = (de ? br(de) : 'início') + ' a ' + (ate ? br(ate) : 'hoje');
-    var h = '<div class="nota">Período: <b>' + per + '</b>' + (op ? ' · consultor: <b>' + esc(op) + '</b>' : '') + '</div>' +
+    var h = '<div class="nota">Período: <b>' + per + '</b>' + (pl ? ' · plano: <b>' + esc(pl) + '</b>' : '') + (op ? ' · consultor: <b>' + esc(op) + '</b>' : '') + '</div>' +
       '<div class="tot"><div><span>Vendas pagas</span><b>' + tq + '</b></div><div><span>Faturado</span><b>' + moeda(tv) + '</b></div>' +
       '<div><span>Ticket médio</span><b>' + (tq ? moeda(tv / tq) : '—') + '</b></div><div><span>Consultores com venda</span><b>' + linhas.length + '</b></div></div>';
     if (!todas.length) { $('pp-corpo').innerHTML = h + '<div class="vazio">Nenhuma venda paga neste período.</div>'; return; }
@@ -606,6 +620,15 @@ var PP = (function () {
         return '<tr data-op="' + esc(n) + '" class="' + (n === op ? 'sel' : '') + '"><td>' + esc(n) + '</td><td class="n">' + p.qtd + '</td><td class="n v">' + moeda(p.valor) + '</td><td class="n">' + moeda(p.valor / p.qtd) + '</td></tr>';
       }).join('') +
       '</tbody><tfoot><tr><td>Total</td><td class="n">' + todas.length + '</td><td class="n v">' + moeda(todas.reduce(function (s, v) { return s + v.valor; }, 0)) + '</td><td></td></tr></tfoot></table></div>';
+    // por plano: respeita o consultor escolhido; clicar numa linha filtra o plano
+    var pp = {};
+    vs.forEach(function (v) { var p = pp[v.plano] = pp[v.plano] || { qtd: 0, valor: 0 }; p.qtd++; p.valor += v.valor; });
+    var planos = Object.keys(pp).sort(function (a, b) { return pp[b].qtd - pp[a].qtd || pp[b].valor - pp[a].valor; });
+    h += '<h3>Por plano' + (op ? ' · ' + esc(op) : '') + ' <small style="font-size:12px;color:var(--texto-3);font-weight:600">clique numa linha para filtrar o plano</small></h3><div class="tab"><table><thead><tr><th>Plano</th><th class="n">Vendas</th><th class="n">Faturado</th><th class="n">Ticket médio</th></tr></thead><tbody class="ops pls">' +
+      planos.map(function (n) {
+        var p = pp[n];
+        return '<tr data-pl="' + esc(n) + '" class="' + (n === pl ? 'sel' : '') + '"><td>' + esc(n) + '</td><td class="n">' + p.qtd + '</td><td class="n v">' + moeda(p.valor) + '</td><td class="n">' + moeda(p.valor / p.qtd) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
     h += '<h3>Vendas (' + vs.length + ')</h3><div class="tab"><table><thead><tr><th>Pago em</th><th>Lançada em</th><th>Consultor</th><th>Cliente</th><th>Plano</th><th>Unidade</th><th class="n">Valor</th><th class="n">Nº venda</th></tr></thead><tbody>' +
       vs.map(function (v) {
         return '<tr><td>' + dataHora(v.quando) + '</td><td>' + dataHora(v.venda) + '</td><td>' + esc(v.operador) + '</td><td>' + esc(v.cliente || '—') + '</td><td>' + esc(v.plano) + '</td><td>' + esc(v.unidade) + '</td><td class="n v">' + moeda(v.valor) + '</td><td class="n">' + v.id + '</td></tr>';
@@ -613,11 +636,12 @@ var PP = (function () {
     $('pp-corpo').innerHTML = h;
   }
   function csv() {
-    var vs = filtradas(true), q = function (t) { return '"' + String(t == null ? '' : t).replace(/"/g, '""') + '"'; };
+    var vs = filtradas(true, true), q = function (t) { return '"' + String(t == null ? '' : t).replace(/"/g, '""') + '"'; };
     var linhas = [['Pago em', 'Lançada em', 'Consultor', 'Cliente', 'Plano', 'Unidade', 'Valor', 'Nº venda'].map(q).join(';')].concat(vs.map(function (v) {
       return [dataHora(v.quando), dataHora(v.venda), v.operador, v.cliente, v.plano, v.unidade, v.valor.toFixed(2).replace('.', ','), v.id].map(q).join(';');
     }));
-    var a = document.createElement('a'), nome = 'Vendas ' + br($('pp-de').value || D().historicoDesde || '').replace(/\//g, '-') + ' a ' + br($('pp-ate').value || iso(new Date())).replace(/\//g, '-') + ($('pp-op').value ? ' - ' + $('pp-op').value : '') + '.csv';
+    var a = document.createElement('a'), nome = 'Vendas ' + br($('pp-de').value || D().historicoDesde || '').replace(/\//g, '-') + ' a ' + br($('pp-ate').value || iso(new Date())).replace(/\//g, '-') + ($('pp-op').value ? ' - ' + $('pp-op').value : '') + ($('pp-pl').value ? ' - ' + $('pp-pl').value : '') + '.csv';
+    nome = nome.replace(/[\\/:*?"<>|]/g, '-');
     a.href = URL.createObjectURL(new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     a.download = nome; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
@@ -626,11 +650,13 @@ var PP = (function () {
   $('btn-periodo').addEventListener('click', abrir);
   $('pp-fechar').addEventListener('click', fechar);
   $('pp-csv').addEventListener('click', csv);
-  ['pp-de', 'pp-ate', 'pp-op'].forEach(function (id) { $(id).addEventListener('change', desenhar); });
+  ['pp-de', 'pp-ate', 'pp-op', 'pp-pl'].forEach(function (id) { $(id).addEventListener('change', desenhar); });
   document.querySelectorAll('#pp [data-at]').forEach(function (b) { b.addEventListener('click', function () { atalho(b.dataset.at); }); });
   $('pp-corpo').addEventListener('click', function (e) {
     var tr = e.target.closest('tbody.ops tr'); if (!tr) return;
-    $('pp-op').value = $('pp-op').value === tr.dataset.op ? '' : tr.dataset.op; desenhar();
+    if (tr.dataset.pl != null) $('pp-pl').value = $('pp-pl').value === tr.dataset.pl ? '' : tr.dataset.pl;
+    else $('pp-op').value = $('pp-op').value === tr.dataset.op ? '' : tr.dataset.op;
+    desenhar();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('pp').classList.contains('on')) fechar(); });
   if (/periodo/.test(location.hash)) abrir();
