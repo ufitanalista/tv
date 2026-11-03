@@ -281,7 +281,7 @@ const emFoco = u => !!u.foco || temZero(u);
 // nos outros, a do voucher escolhido no seletor
 function regra(u, pl) {
   if (u.zero && u.zero[pl.chave]) return { r: u.zero[pl.chave], zero: true };
-  // unidades em evidência: anual com o CALLFIT/CALLVIP sempre, independente do seletor
+  // unidades em evidência: anual com o voucher fixo da unidade, independente do seletor
   if (u.fixo && u.fixo[pl.chave]) return { r: u.fixo[pl.chave], fixo: true };
   const v = voucherAtual(u);
   return v && v.regras[pl.chave] ? { r: v.regras[pl.chave], v } : null;
