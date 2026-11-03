@@ -275,11 +275,14 @@ function comVoucher(pl, r) {
 
 function voucherAtual(u) { return (u.vouchers || []).find(v => v.codigo === voucher) || null; }
 const temZero = u => !!(u.zero && Object.keys(u.zero).length);
+const emFoco = u => !!u.foco || temZero(u);
 
 // regra de desconto do plano: no recorrente das unidades da campanha vale sempre o CALLZERO (1ª mensalidade grátis);
 // nos outros, a do voucher escolhido no seletor
 function regra(u, pl) {
   if (u.zero && u.zero[pl.chave]) return { r: u.zero[pl.chave], zero: true };
+  // unidades em evidência: anual com o CALLFIT/CALLVIP sempre, independente do seletor
+  if (u.fixo && u.fixo[pl.chave]) return { r: u.fixo[pl.chave], fixo: true };
   const v = voucherAtual(u);
   return v && v.regras[pl.chave] ? { r: v.regras[pl.chave], v } : null;
 }
@@ -386,9 +389,10 @@ function renderLista() {
     </button></li>`;
   };
   // campanha da 1ª mensalidade grátis: essas unidades vêm primeiro, uma seguida da outra, dentro da moldura
-  const campanha = DADOS.unidades.filter(temZero).map(item).join("");
-  const resto = DADOS.unidades.filter(u => !temZero(u)).map(item).join("");
-  ul.innerHTML = (campanha ? `<li><div class="grupo"><span class="rot">🔥 1ª mensalidade grátis</span><ul class="lista">${campanha}</ul></div></li>` : "") + resto;
+  const campanha = DADOS.unidades.filter(emFoco).map(item).join("");
+  const resto = DADOS.unidades.filter(u => !emFoco(u)).map(item).join("");
+  const rotulo = DADOS.unidades.some(temZero) ? "🔥 1ª mensalidade grátis" : (DADOS.rotuloFoco || "⭐ Em evidência");
+  ul.innerHTML = (campanha ? `<li><div class="grupo"><span class="rot">${esc(rotulo)}</span><ul class="lista">${campanha}</ul></div></li>` : "") + resto;
   document.getElementById("vaziobusca").hidden = n > 0;
 }
 
@@ -413,13 +417,16 @@ function renderFicha() {
     const p = precoInfo(u, pl);
     const v = voucherAtual(u);
     const link = linkCheckout(u, pl);
-    return `<article class="plano ${def.linha}${p.zero ? " destaque" : ""}">
-      ${p.zero ? `<span class="fita">🔥 1ª mensalidade grátis</span>` : ""}
+    const foco = u.foco && ["fit_rec", "vip_rec", "anual_fit", "anual_vip"].includes(pl.chave);
+    const fixo = u.fixo && u.fixo[pl.chave];
+    return `<article class="plano ${def.linha}${p.zero || foco ? " destaque" : ""}">
+      ${p.zero ? `<span class="fita">🔥 1ª mensalidade grátis</span>` : foco ? `<span class="fita">⭐ Condição da unidade</span>` : ""}
       <div class="nome"><strong>${esc(def.nome)}</strong><span class="tag ${def.tipo}">${def.tipo === "recorrente" ? "SEM FIDELIDADE" : "FIDELIDADE"}</span></div>
       <div class="preco">${p.de ? `<div class="de">${p.de}</div>` : ""}<div class="grande">${p.grande}</div><div class="det">${p.det}</div></div>
       ${p.pct != null ? `<span class="desc">${p.pct}% de desconto</span>` : ""}
       ${p.cond ? `<p class="cond">${esc(p.cond)}</p>` : ""}
       ${(u.semVoucher || []).includes(pl.chave) ? `<p class="naovale">Sem voucher nesta unidade: o ${esc(def.nome)} sai pelo preço cheio${v ? `, mesmo com o ${esc(v.codigo)} escolhido` : ""}.</p>` :
+        fixo ? `<p class="cond">Voucher ${esc(fixo.codigo)} já vai no link (vale até ${dataBR(fixo.expira)}).</p>` :
         v && !v.regras[pl.chave] && def.tipo !== "recorrente" ? `<p class="naovale">O voucher ${esc(v.codigo)} não vale para este plano.</p>` : ""}
       ${u.boleto && u.boleto[pl.chave] ? `<p class="cond"><strong>Voucher boleto: ${esc(u.boleto[pl.chave].codigo)}</strong> · 12x ${brl(u.boleto[pl.chave].parcela)} no plano de boleto (lançar manualmente no EVO)</p>` : ""}
       ${def.argumento ? `<p class="arg">${esc(def.argumento)}</p>` : ""}
@@ -448,7 +455,7 @@ function renderFicha() {
           ${(u.vouchers || []).map(v => `<option value="${esc(v.codigo)}" ${v.codigo === voucher ? "selected" : ""}>${esc(v.codigo)}${v.exemplo ? " (exemplo)" : ""}</option>`).join("")}
         </select>
       </label>
-      <p class="info">${voucherAtual(u) ? `Preços e links com o voucher <strong>${esc(voucher)}</strong> aplicado.` : (u.vouchers || []).length ? "Escolha o voucher da campanha para ver o preço com desconto." : "Nenhum voucher do call center ativo nesta unidade."}${temZero(u) ? ` <strong>Recorrente: 1ª mensalidade grátis</strong> (voucher ${Object.values(u.zero).map(r => esc(r.codigo)).join(" / ")} já vai no link, vale até ${dataBR(Object.values(u.zero)[0].expira)}).` : ""}</p>
+      <p class="info">${voucherAtual(u) ? `Preços e links com o voucher <strong>${esc(voucher)}</strong> aplicado.` : (u.vouchers || []).length ? "Escolha o voucher da campanha para ver o preço com desconto." : "Nenhum voucher do call center ativo nesta unidade."}${temZero(u) ? ` <strong>Recorrente: 1ª mensalidade grátis</strong> (voucher ${Object.values(u.zero).map(r => esc(r.codigo)).join(" / ")} já vai no link, vale até ${dataBR(Object.values(u.zero)[0].expira)}).` : ""}${u.foco ? ` <strong>Unidade em evidência:</strong> recorrente com a 1ª mensalidade a R$ 39,90; anuais com o voucher da unidade já no link, qualquer que seja o seletor.` : ""}</p>
     </section>`;
 
   if (u.prevenda) {
