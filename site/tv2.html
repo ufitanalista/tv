@@ -575,7 +575,7 @@ function testarSom() {
 var FAIXAS = [[7, 7], [5, 5], [2, 2]]; // [média mínima, R$ por venda], da maior para a menor
 var PP = (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var DPD = null, bits = null, lidoEm = 0, diasEditados = {};
+  var DPD = null, bits = null, lidoEm = 0;
   function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function br(s) { return s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4); }
   function dataHora(s) { return br(s) + ' ' + s.slice(11, 16); }
@@ -681,37 +681,20 @@ var PP = (function () {
     return { media: media, faixa: f, valor: f * x.qtd };
   }
   function htmlComissao(de, ate) {
-    var linhas = calcComissao(de, ate), chave = de + '|' + ate;
-    linhas.forEach(function (x) { var k = chave + '|' + x.nome; if (diasEditados[k] != null) { x.dias = diasEditados[k]; x.editado = true; } });
+    var linhas = calcComissao(de, ate);
     var h = '<h3>💰 Comissão do período</h3><div class="com"><div class="regra">Média = vendas pagas ÷ dias trabalhados · 2 a 4 por dia = <b>R$ 2</b> por venda · 5 a 6 = <b>R$ 5</b> · 7 ou mais = <b>R$ 7</b> · abaixo de 2 não comissiona.<br>' +
-      'Dias trabalhados = dias com ligações no discador (por pessoa). <b>O DP pode corrigir os dias</b> na tabela: o cálculo muda na hora (a correção vale só nesta tela; para ficar fixa, peça para incluir na lista de ajustes).</div>' +
+      'Dias trabalhados = dias com ligações no discador (por pessoa), ou o número definido pela gestão para o mês (marcado com *).</div>' +
       '<div class="tab"><table><thead><tr><th>Consultor</th><th class="n">Vendas pagas</th><th class="n">Dias trabalhados</th><th class="n">Média/dia</th><th class="n">R$ por venda</th><th class="n">Comissão</th></tr></thead><tbody id="pp-com">' +
       linhas.map(function (x) {
-        var c = linhaCom(x), obs = x.ajuste ? 'ajuste: ' + x.ajuste.motivo : x.editado ? 'corrigido nesta tela (discador: ' + x.diasDiscador + ')' : 'discador';
-        return '<tr data-nome="' + esc(x.nome) + '" data-qtd="' + x.qtd + '" data-disc="' + x.diasDiscador + '"><td>' + esc(x.nome) +
+        var c = linhaCom(x), obs = x.ajuste ? 'definido pela gestão: ' + x.ajuste.motivo + ' (discador: ' + x.diasDiscador + ')' : 'dias com ligações no discador';
+        return '<tr data-nome="' + esc(x.nome) + '" data-qtd="' + x.qtd + '" data-dias="' + x.dias + '"><td>' + esc(x.nome) +
           (x.fora ? '<small>' + x.fora + ' venda(s) antes de ' + br(x.ajuste.vendas_desde) + ' fora da conta</small>' : '') + '</td>' +
-          '<td class="n">' + x.qtd + '</td><td class="n"><input class="dias' + (x.ajuste || x.editado ? ' mudou' : '') + '" type="number" min="0" step="1" value="' + x.dias + '" title="' + esc(obs) + '"></td>' +
+          '<td class="n">' + x.qtd + '</td><td class="n" title="' + esc(obs) + '">' + x.dias + (x.ajuste ? ' *' : '') + '</td>' +
           '<td class="n m">' + (x.dias ? num(c.media, 2) : '—') + '</td><td class="n f' + (c.faixa ? '' : ' zero') + '">' + (c.faixa ? moeda(c.faixa) : '—') + '</td><td class="n v c">' + moeda(c.valor) + '</td></tr>';
       }).join('') + '</tbody><tfoot><tr><td>Total</td><td class="n">' + linhas.reduce(function (s, x) { return s + x.qtd; }, 0) + '</td><td></td><td></td><td></td><td class="n v" id="pp-com-tot">' +
       moeda(linhas.reduce(function (s, x) { return s + linhaCom(x).valor; }, 0)) + '</td></tr></tfoot></table></div>' +
       '<div style="text-align:right;margin-top:8px"><button type="button" id="pp-com-csv">⬇ Baixar comissão</button></div></div>';
     return h;
-  }
-  // DP mudou os dias de alguém: recalcula a linha e o total sem redesenhar a tela (não perde o cursor)
-  function recalcular(input) {
-    var tr = input.closest('tr'), dias = Math.max(0, parseInt(input.value, 10) || 0);
-    var k = $('pp-de').value + '|' + $('pp-ate').value + '|' + tr.dataset.nome;
-    diasEditados[k] = dias; input.classList.add('mudou');
-    var c = linhaCom({ qtd: +tr.dataset.qtd, dias: dias });
-    tr.querySelector('.m').textContent = dias ? num(c.media, 2) : '—';
-    tr.querySelector('.f').textContent = c.faixa ? moeda(c.faixa) : '—';
-    tr.querySelector('.f').classList.toggle('zero', !c.faixa);
-    tr.querySelector('.c').textContent = moeda(c.valor);
-    var tot = 0;
-    document.querySelectorAll('#pp-com tr').forEach(function (t) {
-      tot += linhaCom({ qtd: +t.dataset.qtd, dias: parseInt(t.querySelector('input').value, 10) || 0 }).valor;
-    });
-    $('pp-com-tot').textContent = moeda(tot);
   }
   function baixar(nome, linhas) {
     var a = document.createElement('a');
@@ -724,7 +707,7 @@ var PP = (function () {
   function csvComissao() {
     var linhas = [['Consultor', 'Vendas pagas', 'Dias trabalhados', 'Média/dia', 'R$ por venda', 'Comissão'].map(q).join(';')];
     document.querySelectorAll('#pp-com tr').forEach(function (t) {
-      var dias = parseInt(t.querySelector('input').value, 10) || 0, c = linhaCom({ qtd: +t.dataset.qtd, dias: dias });
+      var dias = +t.dataset.dias, c = linhaCom({ qtd: +t.dataset.qtd, dias: dias });
       linhas.push([t.dataset.nome, t.dataset.qtd, dias, dias ? num(c.media, 2) : '', num(c.faixa, 2), num(c.valor, 2)].map(q).join(';'));
     });
     baixar('Comissão ' + periodoNome() + '.csv', linhas);
@@ -792,7 +775,7 @@ var PP = (function () {
   function atualizar() {
     if (!bits || !$('pp').classList.contains('on') || Date.now() - lidoEm < 120000) return;
     lidoEm = Date.now();
-    carregar(bits).then(function () { var a = document.activeElement; if (!(a && a.closest && a.closest('#pp-com'))) desenhar(); }).catch(function () {});
+    carregar(bits).then(desenhar).catch(function () {});
   }
   function abrir() {
     $('pp').classList.add('on');
@@ -806,7 +789,7 @@ var PP = (function () {
   }
   function fechar() { $('pp').classList.remove('on'); if (/periodo/.test(location.hash)) history.replaceState(null, '', location.pathname); }
   function sair() {
-    DPD = null; bits = null; diasEditados = {};
+    DPD = null; bits = null;
     try { sessionStorage.removeItem('ufit-dp'); } catch (e) {}
     fechar();
   }
@@ -816,7 +799,6 @@ var PP = (function () {
   $('pp-csv').addEventListener('click', csv);
   ['pp-de', 'pp-ate', 'pp-op', 'pp-pl'].forEach(function (id) { $(id).addEventListener('change', desenhar); });
   document.querySelectorAll('#pp [data-at]').forEach(function (b) { b.addEventListener('click', function () { atalho(b.dataset.at); }); });
-  $('pp-corpo').addEventListener('input', function (e) { if (e.target.classList.contains('dias')) recalcular(e.target); });
   $('pp-corpo').addEventListener('click', function (e) {
     if (e.target.id === 'pp-com-csv') return csvComissao();
     var tr = e.target.closest('tbody.ops tr'); if (!tr) return;
