@@ -21,6 +21,7 @@ segredos = {
     'GOVOICE_CRED': ler('govoice-credentials.json'),
     'CHAVE_TV': chaves['tv'],
     'CHAVE_INTERNA': chaves['interna'],
+    'CHAVE_DP': chaves['dp'],  # aba Período da TV 2 (senha do DP)
 }
 for nome, valor in segredos.items():
     subprocess.run([GH, 'secret', 'set', nome, '-R', PROJETO], input=valor.encode('utf-8'), check=True)

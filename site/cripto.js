@@ -36,11 +36,11 @@
     return out;
   }
 
-  function ler(arquivo) {
+  function ler(arquivo, outraChave) {
     return fetch(variar(arquivo), { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
       .then(function (buf) {
-        return obterChave().then(function (ck) {
+        return (outraChave || obterChave()).then(function (ck) {
           return crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(buf, 0, 12) }, ck, new Uint8Array(buf, 12));
         });
       })
@@ -85,6 +85,12 @@
   // TVs: tv-comum.js chama esta função para buscar os dados de novo (a cada 20 s)
   window.TV_RECARREGAR = function (aoChegar) {
     ler(ARQUIVO).then(function (d) { window[VAR] = d; aoChegar(); }).catch(function () {});
+  };
+
+  // Aba Período da TV 2: abre outro arquivo (dp.enc) com outra chave (a do DP, que vem da senha do DP).
+  // chaveBits = ArrayBuffer de 32 bytes. Devolve uma promessa com os dados; senha errada → erro OperationError.
+  window.UFIT_LER_COM = function (arquivo, chaveBits) {
+    return ler(arquivo, crypto.subtle.importKey('raw', chaveBits, 'AES-GCM', false, ['decrypt']));
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);

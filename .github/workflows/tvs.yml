@@ -29,6 +29,7 @@ jobs:
       TZ: America/Sao_Paulo
       CHAVE_TV: ${{ secrets.CHAVE_TV }}
       CHAVE_INTERNA: ${{ secrets.CHAVE_INTERNA }}
+      CHAVE_DP: ${{ secrets.CHAVE_DP }}
       UFIT_CONFIG: /tmp/ufit/config
       UFIT_ESTADO: /tmp/ufit/estado
       UFIT_CREDENCIAIS: /tmp/ufit/cred
@@ -68,6 +69,10 @@ jobs:
           mkdir -p public
           cp -r site/. public/
           node ferramentas/cripto.js cifrar CHAVE_TV /tmp/ufit/saida/dados.json public/dados.enc
+          # aba Período da TV 2 (comissão): só abre com a senha do DP
+          if [ -n "$CHAVE_DP" ] && [ -f /tmp/ufit/saida/dp.json ]; then
+            node ferramentas/cripto.js cifrar CHAVE_DP /tmp/ufit/saida/dp.json public/dp.enc
+          fi
           if [ -f /tmp/ufit/saida/conv.json ]; then
             node ferramentas/cripto.js cifrar CHAVE_TV /tmp/ufit/saida/conv.json public/conv.enc
           elif [ -s /tmp/ufit/conv-anterior.enc ]; then

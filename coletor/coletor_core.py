@@ -345,6 +345,51 @@ def vendas_historico(get, guarda, ids, hoje):
     return c['vendas'], faltam
 
 
+# Dias trabalhados (comissão): ligações de cada ramal por dia no discador. Dia fechado é buscado uma vez.
+DISCADOR_DESDE = '2026-10-01'
+
+
+def dias_discador(gv, guarda, hoje):
+    """{dia: {ramal: nº de ligações}} de DISCADOR_DESDE até hoje (hoje é buscado de novo a cada coleta)."""
+    c = guarda.ler('dias_gv') or {}
+    if c.get('desde') != DISCADOR_DESDE:
+        c = {'desde': DISCADOR_DESDE, 'dias': {}}
+    ramais = sorted({a['endpoint_id'] for a in gv.get('/api/agents') if a.get('endpoint_id')})
+    dia, feitos, mudou = datetime.strptime(DISCADOR_DESDE, '%Y-%m-%d').date(), 0, False
+    while dia <= hoje:
+        d = dia.isoformat()
+        if (d not in c['dias'] and feitos < DIAS_POR_CICLO) or dia == hoje:
+            cont = {}
+            for r in ramais:
+                n = gv.get('/api/cdr', start_date=d, end_date=d, extension=r, limit=1)['meta']['item_count']
+                if n:
+                    cont[r] = n
+            if dia == hoje:
+                hoje_cont = cont
+            else:
+                c['dias'][d], feitos, mudou = cont, feitos + 1, True
+        dia += timedelta(days=1)
+    if mudou:
+        guarda.gravar('dias_gv', c)
+    return dict(c['dias'], **{hoje.isoformat(): hoje_cont})
+
+
+def dados_dp(vendas, discador, ops_csv):
+    """O que só o DP vê (arquivo com senha própria): vendas pagas, dias no discador e as listas de ajuste."""
+    def csv_ou_vazio(nome):
+        try:
+            return [{k: (v or '').strip() for k, v in l.items()} for l in ler_csv(nome)]
+        except OSError:
+            return []
+    return {
+        'historicoVendas': vendas,
+        'discador': discador,
+        'ramais': {o['ramal'].strip(): o['nome_govoice'].strip() for o in ops_csv},
+        'ramaisAntes': csv_ou_vazio('ramais_historico.csv'),   # ramal;nome;ate → até essa data o ramal era dessa pessoa
+        'diasAjuste': csv_ou_vazio('dias_trabalhados.csv'),    # mes;nome;dias;vendas_desde;motivo (decisão do DP/gestão)
+    }
+
+
 def nome_unidade(n):
     n = (n or '').replace('U FIT ACADEMIA', '').strip(' -')
     return n.title() if n.isupper() else n
@@ -403,8 +448,9 @@ def coletar(cred_evo, cred_gv, guarda):
     hoje = agora.date()
     ops_csv = ler_csv('operadores.csv')
 
+    gv = GoVoice(cred_gv, guarda)
     try:
-        g = coletar_govoice(GoVoice(cred_gv, guarda), ops_csv)
+        g = coletar_govoice(gv, ops_csv)
         g['govoice'] = True
     except Exception as e:
         print('GoVoice indisponível:', e)
@@ -463,12 +509,18 @@ def coletar(cred_evo, cred_gv, guarda):
         'vendasRecentes': [item(v) for v in recentes[:20]],   # aba "Últimas vendas"
         'vendasPendentes': [item(v) for v in pendentes],      # aba "Vendas pendentes"
     })
-    # filtro de período da TV 2 (comissão): todas as vendas pagas desde HISTORICO_DESDE, pela data do pagamento
+    # filtro de período da TV 2 (comissão): todas as vendas pagas desde HISTORICO_DESDE, pela data do pagamento.
+    # Vai em dados['_dp'], que NÃO entra no arquivo das TVs: na nuvem vira dp.enc, aberto só com a senha do DP.
     todas = {v['id']: v for v in hist + mes + dia}  # o mais recente vale (dia > mês > histórico)
-    dados['historicoVendas'] = [dict(item(v), idEmployee=v['idEmployee'], operador=item(v)['operador'] or f"Consultor {v['idEmployee']}")
-                                for v in sorted((v for v in todas.values() if v['pago']), key=lambda v: v['quando'], reverse=True)]
-    dados['historicoDesde'] = HISTORICO_DESDE
-    dados['historicoFaltamDias'] = hist_faltam
+    historico = [dict(item(v), idEmployee=v['idEmployee'], operador=item(v)['operador'] or f"Consultor {v['idEmployee']}")
+                 for v in sorted((v for v in todas.values() if v['pago']), key=lambda v: v['quando'], reverse=True)]
+    try:
+        discador = dias_discador(gv, guarda, hoje)
+    except Exception as e:  # não derruba as TVs
+        print('dias do discador indisponíveis:', type(e).__name__, str(e)[:200])
+        discador = (guarda.ler('dias_gv') or {}).get('dias', {})
+    dados['_dp'] = dict(dados_dp(historico, discador, ops_csv), historicoDesde=HISTORICO_DESDE,
+                        historicoFaltamDias=hist_faltam, atualizadoEm=dados['atualizadoEm'])
     try:
         dados['tvUnidades'] = coletar_unidades(get)
     except Exception as e:  # não derruba as outras TVs

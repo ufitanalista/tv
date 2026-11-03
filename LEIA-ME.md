@@ -17,6 +17,18 @@ O que fica aberto aqui é só o código.
    (qualquer botão do controle cancela e deixa escolher). `ufitanalista.github.io/tv/#menu` abre o menu sem contagem.
 - A senha vira a chave por PBKDF2 (300 mil voltas, sal `ufit-tvs`), igual em `site/index.html` e `ferramentas/cripto.js`.
 
+## Aba Período da TV 2 (DP: vendas e comissão) — senha própria
+- Botão **📅 Período** na TV 2 (ou `tv2.html#periodo`). Pede a **senha do DP**, diferente da senha das TVs
+  (campo `senha_dp` de `C:\Users\comercial2\.claude\ufit-tvs-chaves.json`; a chave dela é o campo `dp`, no cofre do GitHub como `CHAVE_DP`).
+- As vendas (com nome de cliente) e os dias no discador vão em `dp.enc`, fechado com a chave do DP: quem só tem a senha das TVs não abre.
+  A senha vira a chave por PBKDF2 com o sal `ufit-dp` (`SENHA=<senha> SAL=ufit-dp node ferramentas/cripto.js chave-da-senha SENHA`).
+- Comissão (regra de 28/10/2026): média = vendas pagas ÷ dias trabalhados; 2 a 4 = R$ 2 por venda, 5 a 6 = R$ 5, 7+ = R$ 7; abaixo de 2, nada.
+  Dias trabalhados = dias com ligações no discador, por pessoa. Listas na pasta `dashboard-tv`:
+  `ramais_historico.csv` (ramal;nome;ate — quem usava o ramal antes do dono atual) e
+  `dias_trabalhados.csv` (mes;nome;dias;vendas_desde;motivo — dias definidos pela gestão; vale quando o período é o mês inteiro).
+- Trocar a senha do DP: gere uma (`node ferramentas/cripto.js nova-senha`), calcule a chave com `SAL=ufit-dp`, troque `senha_dp` e `dp`
+  no json, rode `python ferramentas/gravar_segredos.py` e `python publicar.py --enviar`.
+
 ## Mudar uma lista (operadores, venda dada como paga, ajuste de vendedor, TV das unidades) ou o Balcão
 1. Mude o arquivo de sempre na pasta `dashboard-tv` (versão do PC). Ela continua sendo a fonte de tudo.
 2. Na pasta `ufit-tvs-nuvem`, rode `python publicar.py --enviar`.

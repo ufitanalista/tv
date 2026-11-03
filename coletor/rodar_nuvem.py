@@ -47,6 +47,12 @@ def main(saida):
     dados = coletor_core.coletar(cred_evo, cred_gv, guarda)
     guarda.gravar('unidades', coletor_core._unidades)
     repetir(dados)
+    # vendas para comissão (aba Período da TV 2): arquivo à parte, criptografado com a chave do DP
+    dp = dados.pop('_dp', None)
+    if dp:
+        with open(os.path.join(saida, 'dp.json'), 'w', encoding='utf-8') as f:
+            json.dump(dp, f, ensure_ascii=False)
+        print('DP ok —', len(dp['historicoVendas']), 'vendas,', len(dp['discador']), 'dias de discador', flush=True)
     with open(os.path.join(saida, 'dados.json'), 'w', encoding='utf-8') as f:
         json.dump(dados, f, ensure_ascii=False)
     print('TVs ok —', coletor_core.resumo(dados), flush=True)

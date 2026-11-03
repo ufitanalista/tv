@@ -26,9 +26,9 @@ function decifrar(k, buf) {
 
 // Senha das TVs → chave. Tem que dar exatamente o mesmo que site/index.html (mesmo sal, voltas e limpeza da senha).
 const SAL = 'ufit-tvs', VOLTAS = 300000;
-function chaveDaSenha(senha) {
+function chaveDaSenha(senha, sal) {
   const limpa = senha.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return crypto.pbkdf2Sync(limpa, SAL, VOLTAS, 32, 'sha256').toString('base64url');
+  return crypto.pbkdf2Sync(limpa, sal || SAL, VOLTAS, 32, 'sha256').toString('base64url');
 }
 
 const [cmd, env, a, b] = process.argv.slice(2);
@@ -39,7 +39,8 @@ else if (cmd === 'nova-senha') {
   console.log(Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => abc[crypto.randomInt(abc.length)]).join('')).join('-'));
 }
 // "chave-da-senha SENHA_ENV": a chave das TVs a partir da senha guardada na variável de ambiente
-else if (cmd === 'chave-da-senha') console.log(chaveDaSenha(process.env[env] || ''));
+// (com SAL=ufit-dp no ambiente: a chave da aba Período da TV 2, senha do DP)
+else if (cmd === 'chave-da-senha') console.log(chaveDaSenha(process.env[env] || '', process.env.SAL));
 // "node cripto.js variar estado.enc" → o mesmo nome com letras sorteadas em código (ex.: e%73tado.enc).
 // O cache do GitHub Pages ignora "?t=", mas trata cada escrita como outro endereço: assim vem sempre a versão nova.
 else if (cmd === 'variar') {

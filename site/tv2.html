@@ -147,6 +147,15 @@
   #pp tbody.ops tr:hover td { background: var(--cartao); }
   #pp tfoot td { font-weight: 800; border-top: 2px solid var(--linha); }
   #pp .vazio { padding: 30px; text-align: center; color: var(--texto-2); background: var(--cartao); border-radius: 12px; }
+  #pp .login { margin: 40px auto; max-width: 440px; background: var(--cartao); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 12px; font-size: 15px; font-weight: 600; color: var(--texto-2); }
+  #pp .login input { font-size: 18px; padding: 10px 12px; }
+  #pp .login .erro { color: #ff7b7b; min-height: 18px; font-size: 14px; }
+  #pp .com { background: var(--cartao); border-radius: 12px; padding: 4px 14px 12px; border-left: 4px solid var(--amarelo); }
+  #pp .com .regra { font-size: 13px; color: var(--texto-2); margin: 8px 0 4px; }
+  #pp .com input.dias { width: 70px; text-align: right; padding: 4px 8px; font-size: 14px; }
+  #pp .com input.dias.mudou { border-color: var(--amarelo); }
+  #pp .com small { font-size: 11px; color: var(--texto-3); font-weight: 600; display: block; }
+  #pp .com td.zero { color: var(--texto-3); }
 </style>
 </head>
 <body>
@@ -184,9 +193,16 @@
   <div class="in">
     <div class="cab">
       <h2>📅 Vendas por período<small>para o cálculo de comissão · só vendas pagas, pela data do pagamento (mesma regra do ranking)</small></h2>
+      <button type="button" id="pp-sair" style="display:none" title="Fecha e pede a senha de novo">🔒 Sair</button>
       <button type="button" id="pp-fechar">✕ Fechar</button>
     </div>
-    <div class="filtros">
+    <form id="pp-login" class="login" autocomplete="off">
+      <div>🔒 Área do DP: digite a senha para ver as vendas e a comissão.</div>
+      <input type="password" id="pp-senha" placeholder="Senha do DP" autocomplete="current-password">
+      <button type="submit" class="pri" id="pp-entrar">Entrar</button>
+      <div class="erro" id="pp-erro"></div>
+    </form>
+    <div class="filtros" id="pp-filtros">
       <label>De <input type="date" id="pp-de"></label>
       <label>Até <input type="date" id="pp-ate"></label>
       <label>Consultor <select id="pp-op"><option value="">Todos</option></select></label>
@@ -550,15 +566,62 @@ function testarSom() {
   proxima();
 }
 
-// ---------- Filtro de período (DP: comissão) ----------
-// Botão "📅 Período" no topo, ou tv2.html#periodo. Usa D().historicoVendas: vendas pagas desde D().historicoDesde.
+// ---------- Filtro de período e comissão (só para o DP, com senha) ----------
+// Botão "📅 Período" no topo, ou tv2.html#periodo. As vendas não vêm nos dados das TVs: ficam em dp.enc,
+// que só abre com a senha do DP (PBKDF2 com o sal "ufit-dp", igual ferramentas/cripto.js → chave-da-senha com SAL=ufit-dp).
+// A chave fica guardada só até fechar o navegador (sessionStorage).
+// Regra de comissão (Yunaina, 28/10/2026): média = vendas pagas ÷ dias trabalhados; 2 a 4 por dia = R$ 2 por venda,
+// 5 a 6 = R$ 5, 7 ou mais = R$ 7; abaixo de 2 não comissiona. Entre faixas (ex.: 4,5) vale a de baixo.
+var FAIXAS = [[7, 7], [5, 5], [2, 2]]; // [média mínima, R$ por venda], da maior para a menor
 var PP = (function () {
   var $ = function (id) { return document.getElementById(id); };
+  var DPD = null, bits = null, lidoEm = 0, diasEditados = {};
   function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function br(s) { return s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4); }
   function dataHora(s) { return br(s) + ' ' + s.slice(11, 16); }
   function moeda(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  function lista() { return D().historicoVendas || []; }
+  function num(v, c) { return v.toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }); }
+  function lista() { return (DPD && DPD.historicoVendas) || []; }
+
+  // ---- senha ----
+  function b64(buf) { return btoa(String.fromCharCode.apply(null, new Uint8Array(buf))); }
+  function deB64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+  function chaveDaSenha(senha) {
+    var enc = new TextEncoder(), limpa = senha.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return crypto.subtle.importKey('raw', enc.encode(limpa), 'PBKDF2', false, ['deriveBits'])
+      .then(function (k) { return crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode('ufit-dp'), iterations: 300000, hash: 'SHA-256' }, k, 256); });
+  }
+  function carregar(b) {
+    return window.UFIT_LER_COM('dp.enc', b).then(function (d) {
+      DPD = d; bits = b; lidoEm = Date.now();
+      try { sessionStorage.setItem('ufit-dp', b64(b)); } catch (e) {}
+    });
+  }
+  function mostrarLogin(msg) {
+    $('pp-login').style.display = ''; $('pp-filtros').style.display = 'none'; $('pp-sair').style.display = 'none';
+    $('pp-aviso').innerHTML = ''; $('pp-corpo').innerHTML = ''; $('pp-erro').textContent = msg || '';
+    if (!window.UFIT_LER_COM) {
+      $('pp-login').innerHTML = '<div>🔒 A área do DP só funciona na versão online: <b>ufitanalista.github.io/tv/tv2.html#periodo</b></div>';
+      return;
+    }
+    setTimeout(function () { $('pp-senha').focus(); }, 50);
+  }
+  function liberado() {
+    $('pp-login').style.display = 'none'; $('pp-filtros').style.display = ''; $('pp-sair').style.display = '';
+    if (!$('pp-de').value) atalho('passado'); else desenhar();
+  }
+  $('pp-login').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var s = $('pp-senha').value; if (!s) return;
+    $('pp-entrar').disabled = true; $('pp-erro').textContent = 'Conferindo…';
+    chaveDaSenha(s).then(carregar).then(function () { $('pp-senha').value = ''; liberado(); })
+      .catch(function (err) {
+        $('pp-erro').textContent = /OperationError/.test(err && err.name) ? 'Senha incorreta.' : 'Não consegui abrir os dados agora. Tente de novo em 1 minuto.';
+      })
+      .then(function () { $('pp-entrar').disabled = false; });
+  });
+
+  // ---- filtros ----
   function atalho(q) {
     var h = new Date(), de, ate = h;
     if (q === 'mes') de = new Date(h.getFullYear(), h.getMonth(), 1);
@@ -586,8 +649,90 @@ var PP = (function () {
     }).join('');
     sel.value = atual;
   }
+
+  // ---- comissão ----
+  // dono do ramal num dia: ramais_historico.csv (ramal;nome;ate) vale até "ate"; depois, o dono atual (operadores.csv)
+  function dono(ramal, dia) {
+    var antes = (DPD.ramaisAntes || []).filter(function (x) { return x.ramal === ramal && dia <= x.ate; })
+      .sort(function (a, b) { return a.ate < b.ate ? -1 : 1; })[0];
+    return antes ? antes.nome : (DPD.ramais || {})[ramal] || 'Ramal ' + ramal;
+  }
+  function faixa(media) { for (var i = 0; i < FAIXAS.length; i++) if (media >= FAIXAS[i][0]) return FAIXAS[i][1]; return 0; }
+  function calcComissao(de, ate) {
+    var pessoas = {}, d;
+    function p(n) { return pessoas[n] = pessoas[n] || { nome: n, dias: {}, vendas: [] }; }
+    for (d in DPD.discador || {}) {
+      if ((de && d < de) || (ate && d > ate)) continue;
+      for (var r in DPD.discador[d]) if (DPD.discador[d][r] > 0) p(dono(r, d)).dias[d] = 1;
+    }
+    lista().forEach(function (v) { var dd = v.quando.slice(0, 10); if ((!de || dd >= de) && (!ate || dd <= ate)) p(v.operador).vendas.push(v); });
+    // ajuste do DP (dias_trabalhados.csv) só vale quando o período é o mês inteiro
+    var mes = de && de.slice(0, 7), fim = mes && iso(new Date(+mes.slice(0, 4), +mes.slice(5, 7), 0));
+    var mesInteiro = mes && de === mes + '-01' && ate === fim;
+    return Object.keys(pessoas).map(function (n) {
+      var x = pessoas[n], aj = mesInteiro && (DPD.diasAjuste || []).filter(function (a) { return a.mes === mes && a.nome === n; })[0];
+      var vendas = aj && aj.vendas_desde ? x.vendas.filter(function (v) { return v.quando.slice(0, 10) >= aj.vendas_desde; }) : x.vendas;
+      return { nome: n, qtd: vendas.length, diasDiscador: Object.keys(x.dias).length, dias: aj && aj.dias ? +aj.dias : Object.keys(x.dias).length,
+               ajuste: aj || null, fora: x.vendas.length - vendas.length };
+    }).sort(function (a, b) { return b.qtd - a.qtd || a.nome.localeCompare(b.nome); });
+  }
+  function linhaCom(x) {
+    var media = x.dias ? x.qtd / x.dias : 0, f = faixa(media);
+    return { media: media, faixa: f, valor: f * x.qtd };
+  }
+  function htmlComissao(de, ate) {
+    var linhas = calcComissao(de, ate), chave = de + '|' + ate;
+    linhas.forEach(function (x) { var k = chave + '|' + x.nome; if (diasEditados[k] != null) { x.dias = diasEditados[k]; x.editado = true; } });
+    var h = '<h3>💰 Comissão do período</h3><div class="com"><div class="regra">Média = vendas pagas ÷ dias trabalhados · 2 a 4 por dia = <b>R$ 2</b> por venda · 5 a 6 = <b>R$ 5</b> · 7 ou mais = <b>R$ 7</b> · abaixo de 2 não comissiona.<br>' +
+      'Dias trabalhados = dias com ligações no discador (por pessoa). <b>O DP pode corrigir os dias</b> na tabela: o cálculo muda na hora (a correção vale só nesta tela; para ficar fixa, peça para incluir na lista de ajustes).</div>' +
+      '<div class="tab"><table><thead><tr><th>Consultor</th><th class="n">Vendas pagas</th><th class="n">Dias trabalhados</th><th class="n">Média/dia</th><th class="n">R$ por venda</th><th class="n">Comissão</th></tr></thead><tbody id="pp-com">' +
+      linhas.map(function (x) {
+        var c = linhaCom(x), obs = x.ajuste ? 'ajuste: ' + x.ajuste.motivo : x.editado ? 'corrigido nesta tela (discador: ' + x.diasDiscador + ')' : 'discador';
+        return '<tr data-nome="' + esc(x.nome) + '" data-qtd="' + x.qtd + '" data-disc="' + x.diasDiscador + '"><td>' + esc(x.nome) +
+          (x.fora ? '<small>' + x.fora + ' venda(s) antes de ' + br(x.ajuste.vendas_desde) + ' fora da conta</small>' : '') + '</td>' +
+          '<td class="n">' + x.qtd + '</td><td class="n"><input class="dias' + (x.ajuste || x.editado ? ' mudou' : '') + '" type="number" min="0" step="1" value="' + x.dias + '" title="' + esc(obs) + '"></td>' +
+          '<td class="n m">' + (x.dias ? num(c.media, 2) : '—') + '</td><td class="n f' + (c.faixa ? '' : ' zero') + '">' + (c.faixa ? moeda(c.faixa) : '—') + '</td><td class="n v c">' + moeda(c.valor) + '</td></tr>';
+      }).join('') + '</tbody><tfoot><tr><td>Total</td><td class="n">' + linhas.reduce(function (s, x) { return s + x.qtd; }, 0) + '</td><td></td><td></td><td></td><td class="n v" id="pp-com-tot">' +
+      moeda(linhas.reduce(function (s, x) { return s + linhaCom(x).valor; }, 0)) + '</td></tr></tfoot></table></div>' +
+      '<div style="text-align:right;margin-top:8px"><button type="button" id="pp-com-csv">⬇ Baixar comissão</button></div></div>';
+    return h;
+  }
+  // DP mudou os dias de alguém: recalcula a linha e o total sem redesenhar a tela (não perde o cursor)
+  function recalcular(input) {
+    var tr = input.closest('tr'), dias = Math.max(0, parseInt(input.value, 10) || 0);
+    var k = $('pp-de').value + '|' + $('pp-ate').value + '|' + tr.dataset.nome;
+    diasEditados[k] = dias; input.classList.add('mudou');
+    var c = linhaCom({ qtd: +tr.dataset.qtd, dias: dias });
+    tr.querySelector('.m').textContent = dias ? num(c.media, 2) : '—';
+    tr.querySelector('.f').textContent = c.faixa ? moeda(c.faixa) : '—';
+    tr.querySelector('.f').classList.toggle('zero', !c.faixa);
+    tr.querySelector('.c').textContent = moeda(c.valor);
+    var tot = 0;
+    document.querySelectorAll('#pp-com tr').forEach(function (t) {
+      tot += linhaCom({ qtd: +t.dataset.qtd, dias: parseInt(t.querySelector('input').value, 10) || 0 }).valor;
+    });
+    $('pp-com-tot').textContent = moeda(tot);
+  }
+  function baixar(nome, linhas) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = nome.replace(/[\\/:*?"<>|]/g, '-'); document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function q(t) { return '"' + String(t == null ? '' : t).replace(/"/g, '""') + '"'; }
+  function periodoNome() { return br($('pp-de').value || DPD.historicoDesde || '') + ' a ' + br($('pp-ate').value || iso(new Date())); }
+  function csvComissao() {
+    var linhas = [['Consultor', 'Vendas pagas', 'Dias trabalhados', 'Média/dia', 'R$ por venda', 'Comissão'].map(q).join(';')];
+    document.querySelectorAll('#pp-com tr').forEach(function (t) {
+      var dias = parseInt(t.querySelector('input').value, 10) || 0, c = linhaCom({ qtd: +t.dataset.qtd, dias: dias });
+      linhas.push([t.dataset.nome, t.dataset.qtd, dias, dias ? num(c.media, 2) : '', num(c.faixa, 2), num(c.valor, 2)].map(q).join(';'));
+    });
+    baixar('Comissão ' + periodoNome() + '.csv', linhas);
+  }
+
+  // ---- tela ----
   function desenhar() {
-    if (!$('pp').classList.contains('on')) return;
+    if (!$('pp').classList.contains('on') || !DPD) return;
     opcoesPlano();
     var de = $('pp-de').value, ate = $('pp-ate').value, op = $('pp-op').value, pl = $('pp-pl').value;
     // opções de consultor: todos que aparecem no histórico
@@ -597,9 +742,8 @@ var PP = (function () {
       sel.innerHTML = '<option value="">Todos</option>' + ops.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('');
       sel.value = nomes[op] ? op : '';
     }
-    var desde = D().historicoDesde, avisos = [];
-    if (!D().historicoVendas) avisos.push('O histórico ainda não chegou nesta tela. Aguarde a próxima atualização (até 5 min).');
-    else if (D().historicoFaltamDias) avisos.push('Carregando o histórico: faltam ' + D().historicoFaltamDias + ' dia(s). Os números ainda podem subir.');
+    var desde = DPD.historicoDesde, avisos = [];
+    if (DPD.historicoFaltamDias) avisos.push('Carregando o histórico: faltam ' + DPD.historicoFaltamDias + ' dia(s). Os números ainda podem subir.');
     if (desde && de && de < desde) avisos.push('O histórico começa em ' + br(desde) + ': antes disso não há dados.');
     if (de && ate && de > ate) avisos.push('A data "De" está depois da data "Até".');
     $('pp-aviso').innerHTML = avisos.map(esc).join('<br>');
@@ -613,7 +757,9 @@ var PP = (function () {
     var h = '<div class="nota">Período: <b>' + per + '</b>' + (pl ? ' · plano: <b>' + esc(pl) + '</b>' : '') + (op ? ' · consultor: <b>' + esc(op) + '</b>' : '') + '</div>' +
       '<div class="tot"><div><span>Vendas pagas</span><b>' + tq + '</b></div><div><span>Faturado</span><b>' + moeda(tv) + '</b></div>' +
       '<div><span>Ticket médio</span><b>' + (tq ? moeda(tv / tq) : '—') + '</b></div><div><span>Consultores com venda</span><b>' + linhas.length + '</b></div></div>';
-    if (!todas.length) { $('pp-corpo').innerHTML = h + '<div class="vazio">Nenhuma venda paga neste período.</div>'; return; }
+    // a comissão usa todas as vendas do período (os filtros de plano e consultor não mudam o cálculo)
+    h += htmlComissao(de, ate);
+    if (!todas.length) { $('pp-corpo').innerHTML = h + '<h3>Vendas</h3><div class="vazio">Nenhuma venda paga neste período' + (pl ? ' com este plano' : '') + '.</div>'; return; }
     h += '<h3>Por consultor <small style="font-size:12px;color:var(--texto-3);font-weight:600">clique numa linha para ver só as vendas dele(a)</small></h3><div class="tab"><table><thead><tr><th>Consultor</th><th class="n">Vendas</th><th class="n">Faturado</th><th class="n">Ticket médio</th></tr></thead><tbody class="ops">' +
       linhas.map(function (n) {
         var p = por[n];
@@ -636,23 +782,43 @@ var PP = (function () {
     $('pp-corpo').innerHTML = h;
   }
   function csv() {
-    var vs = filtradas(true, true), q = function (t) { return '"' + String(t == null ? '' : t).replace(/"/g, '""') + '"'; };
+    var vs = filtradas(true, true);
     var linhas = [['Pago em', 'Lançada em', 'Consultor', 'Cliente', 'Plano', 'Unidade', 'Valor', 'Nº venda'].map(q).join(';')].concat(vs.map(function (v) {
       return [dataHora(v.quando), dataHora(v.venda), v.operador, v.cliente, v.plano, v.unidade, v.valor.toFixed(2).replace('.', ','), v.id].map(q).join(';');
     }));
-    var a = document.createElement('a'), nome = 'Vendas ' + br($('pp-de').value || D().historicoDesde || '').replace(/\//g, '-') + ' a ' + br($('pp-ate').value || iso(new Date())).replace(/\//g, '-') + ($('pp-op').value ? ' - ' + $('pp-op').value : '') + ($('pp-pl').value ? ' - ' + $('pp-pl').value : '') + '.csv';
-    nome = nome.replace(/[\\/:*?"<>|]/g, '-');
-    a.href = URL.createObjectURL(new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-    a.download = nome; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    baixar('Vendas ' + periodoNome().replace(/\//g, '-') + ($('pp-op').value ? ' - ' + $('pp-op').value : '') + ($('pp-pl').value ? ' - ' + $('pp-pl').value : '') + '.csv', linhas);
   }
-  function abrir() { $('pp').classList.add('on'); if (!$('pp-de').value) atalho('mes'); else desenhar(); }
+  // a cada 2 min, com o painel aberto, busca o dp.enc de novo (não redesenha se o DP estiver digitando)
+  function atualizar() {
+    if (!bits || !$('pp').classList.contains('on') || Date.now() - lidoEm < 120000) return;
+    lidoEm = Date.now();
+    carregar(bits).then(function () { var a = document.activeElement; if (!(a && a.closest && a.closest('#pp-com'))) desenhar(); }).catch(function () {});
+  }
+  function abrir() {
+    $('pp').classList.add('on');
+    if (DPD) return liberado();
+    var guardada = null;
+    try { guardada = sessionStorage.getItem('ufit-dp'); } catch (e) {}
+    if (guardada && window.UFIT_LER_COM) {
+      mostrarLogin('Abrindo…');
+      carregar(deB64(guardada)).then(liberado).catch(function () { try { sessionStorage.removeItem('ufit-dp'); } catch (e) {} mostrarLogin(''); });
+    } else mostrarLogin('');
+  }
   function fechar() { $('pp').classList.remove('on'); if (/periodo/.test(location.hash)) history.replaceState(null, '', location.pathname); }
+  function sair() {
+    DPD = null; bits = null; diasEditados = {};
+    try { sessionStorage.removeItem('ufit-dp'); } catch (e) {}
+    fechar();
+  }
   $('btn-periodo').addEventListener('click', abrir);
   $('pp-fechar').addEventListener('click', fechar);
+  $('pp-sair').addEventListener('click', sair);
   $('pp-csv').addEventListener('click', csv);
   ['pp-de', 'pp-ate', 'pp-op', 'pp-pl'].forEach(function (id) { $(id).addEventListener('change', desenhar); });
   document.querySelectorAll('#pp [data-at]').forEach(function (b) { b.addEventListener('click', function () { atalho(b.dataset.at); }); });
+  $('pp-corpo').addEventListener('input', function (e) { if (e.target.classList.contains('dias')) recalcular(e.target); });
   $('pp-corpo').addEventListener('click', function (e) {
+    if (e.target.id === 'pp-com-csv') return csvComissao();
     var tr = e.target.closest('tbody.ops tr'); if (!tr) return;
     if (tr.dataset.pl != null) $('pp-pl').value = $('pp-pl').value === tr.dataset.pl ? '' : tr.dataset.pl;
     else $('pp-op').value = $('pp-op').value === tr.dataset.op ? '' : tr.dataset.op;
@@ -660,7 +826,7 @@ var PP = (function () {
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('pp').classList.contains('on')) fechar(); });
   if (/periodo/.test(location.hash)) abrir();
-  return { desenhar: desenhar };
+  return { desenhar: atualizar };
 })();
 
 TV.iniciar();
