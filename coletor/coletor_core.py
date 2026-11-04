@@ -245,9 +245,17 @@ def resumir(vendas, ids):
         venda = (s.get('saleDateServer') or s.get('saleDate') or '')[:19]
         pago_em = min(((x.get('updateDate') or '')[:19] for x in pagas), default='') or venda
         plano = next((i.get('item') for i in itens if i.get('idMembership')), None) or (itens[0].get('item') if itens else 'Venda')
+        valor = sum(i.get('saleValue') or 0 for i in itens)
+        # boleto (paymentType 5): conta só o 1º boleto, não o plano inteiro (pedido de 04/11/2026).
+        # Ex.: anual R$ 958,80 em 12 boletos de 79,90 → vale 79,90. Usa `ammount` (sem descontar a tarifa do banco).
+        boletos = sorted((x for x in recs if (x.get('paymentType') or {}).get('id') == 5 and not x.get('cancellationDate')
+                          and (x.get('status') or {}).get('id') != 3),  # 3 = cancelado
+                         key=lambda x: x.get('dueDate') or '')
+        if boletos:
+            valor = valor - sum(x.get('ammount') or 0 for x in boletos) + (boletos[0].get('ammount') or 0)
         r.append({
             'id': s['idSale'], 'idEmployee': quem, 'idBranch': s.get('idBranch'),
-            'valor': round(sum(i.get('saleValue') or 0 for i in itens), 2), 'plano': plano,
+            'valor': round(valor, 2), 'plano': plano,
             'cliente': nome_cliente(s), 'venda': venda + '-03:00',
             # link de cobrança que passou do vencimento sem pagamento (status 4 no EVO)
             'vencida': not pagas and any((x.get('status') or {}).get('id') == 4 for x in recs),
@@ -271,9 +279,33 @@ def vendas_do_mes(get, guarda, ids, hoje):
             mudou = True
         dia += timedelta(days=1)
     c['vendas'], m2 = reconferir(get, c['vendas'], ids)
-    if mudou or m2:
+    m3 = recalcular_boletos(get, c, ids)
+    if mudou or m2 or m3:
         guarda.gravar('vendas_mes', c)
     return c['vendas']
+
+
+VALOR_BOLETO = 1  # versão da regra "boleto vale só o 1º boleto": quando muda, as vendas guardadas são recalculadas
+
+
+def recalcular_boletos(get, c, ids):
+    """Uma vez só: busca de novo no EVO as vendas guardadas com plano de BOLETO, para valer a regra do 1º boleto
+    também nos dias já fechados (sem rebuscar o mês inteiro). Devolve True se mexeu no cache."""
+    if c.get('valorBoleto') == VALOR_BOLETO:
+        return False
+    vendas = list(c['vendas'])
+    for k, v in enumerate(vendas):
+        if 'BOLETO' not in (v.get('plano') or '').upper():
+            continue
+        try:
+            novo = resumir([get(f"/api/v2/sales/{v['id']}?showReceivables=true")], ids)
+        except Exception as e:  # tenta de novo no próximo ciclo
+            print('venda', v['id'], 'sem resposta do EVO (boleto):', e)
+            return False
+        if novo:  # mantém pago/quando já guardados; só troca o valor
+            vendas[k] = dict(v, valor=novo[0]['valor'])
+    c['vendas'], c['valorBoleto'] = vendas, VALOR_BOLETO
+    return True
 
 
 def reconferir(get, vendas, ids, desde=''):
@@ -340,7 +372,8 @@ def vendas_historico(get, guarda, ids, hoje):
         dia += timedelta(days=1)
     # venda do fim do mês paga depois: reconfere as dos últimos 60 dias
     c['vendas'], m2 = reconferir(get, c['vendas'], todos, (hoje - timedelta(days=60)).isoformat())
-    if mudou or m2:
+    m3 = recalcular_boletos(get, c, todos)
+    if mudou or m2 or m3:
         guarda.gravar('vendas_hist', c)
     return c['vendas'], faltam
 
