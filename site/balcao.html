@@ -421,13 +421,13 @@ function renderFicha() {
     const fixo = u.fixo && u.fixo[pl.chave];
     return `<article class="plano ${def.linha}${p.zero || foco ? " destaque" : ""}">
       ${p.zero ? `<span class="fita">🔥 1ª mensalidade grátis</span>` : foco ? `<span class="fita">⭐ Condição da unidade</span>` : ""}
-      <div class="nome"><strong>${esc(def.nome)}</strong><span class="tag ${def.tipo}">${def.tipo === "recorrente" ? "SEM FIDELIDADE" : "FIDELIDADE"}</span></div>
+      <div class="nome"><strong>${esc(def.nome)}</strong><span class="tag ${def.tipo}">${def.tipo === "recorrente" ? "SEM FIDELIDADE" : /_renov$/.test(pl.chave) ? "RENOVAÇÃO" : "FIDELIDADE"}</span></div>
       <div class="preco">${p.de ? `<div class="de">${p.de}</div>` : ""}<div class="grande">${p.grande}</div><div class="det">${p.det}</div></div>
       ${p.pct != null ? `<span class="desc">${p.pct}% de desconto</span>` : ""}
       ${p.cond ? `<p class="cond">${esc(p.cond)}</p>` : ""}
       ${(u.semVoucher || []).includes(pl.chave) ? `<p class="naovale">Sem voucher nesta unidade: o ${esc(def.nome)} sai pelo preço cheio${v ? `, mesmo com o ${esc(v.codigo)} escolhido` : ""}.</p>` :
         fixo ? `<p class="cond">Voucher ${esc(fixo.codigo)} já vai no link (vale até ${dataBR(fixo.expira)}).</p>` :
-        v && !v.regras[pl.chave] && def.tipo !== "recorrente" ? `<p class="naovale">O voucher ${esc(v.codigo)} não vale para este plano.</p>` : ""}
+        v && !v.regras[pl.chave] && def.tipo !== "recorrente" && !/_renov$/.test(pl.chave) ? `<p class="naovale">O voucher ${esc(v.codigo)} não vale para este plano.</p>` : ""}
       ${u.boleto && u.boleto[pl.chave] ? `<p class="cond"><strong>Voucher boleto: ${esc(u.boleto[pl.chave].codigo)}</strong> · 12x ${brl(u.boleto[pl.chave].parcela)} no plano de boleto (lançar manualmente no EVO)</p>` : ""}
       ${def.argumento ? `<p class="arg">${esc(def.argumento)}</p>` : ""}
       <ul>${def.beneficios.map(b => `<li>${esc(b)}</li>`).join("")}</ul>
