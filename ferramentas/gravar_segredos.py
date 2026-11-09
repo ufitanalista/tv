@@ -22,6 +22,7 @@ segredos = {
     'CHAVE_TV': chaves['tv'],
     'CHAVE_INTERNA': chaves['interna'],
     'CHAVE_DP': chaves['dp'],  # aba Período da TV 2 (senha do DP)
+    'CHAVE_CONV': chaves['conv'],  # Painel de convênios (senha própria)
 }
 for nome, valor in segredos.items():
     subprocess.run([GH, 'secret', 'set', nome, '-R', PROJETO], input=valor.encode('utf-8'), check=True)

@@ -29,6 +29,13 @@ O que fica aberto aqui é só o código.
 - Trocar a senha do DP: gere uma (`node ferramentas/cripto.js nova-senha`), calcule a chave com `SAL=ufit-dp`, troque `senha_dp` e `dp`
   no json, rode `python ferramentas/gravar_segredos.py` e `python publicar.py --enviar`.
 
+## Painel de convênios — senha própria
+- Link direto: **`ufitanalista.github.io/tv/convenios.html`** (não precisa da senha das TVs). Pelo menu das TVs também chega, e pede a senha dos Convênios.
+- A senha fica no campo `senha_conv` de `C:\Users\comercial2\.claude\ufit-tvs-chaves.json`; a chave dela é o campo `conv`, no cofre do GitHub como `CHAVE_CONV`.
+  A senha vira a chave por PBKDF2 com o sal `ufit-conv`. O aparelho lembra da senha; o botão "Esquecer a senha" fica no canto da página.
+- Trocar: calcule a chave (`SENHA=<nova> SAL=ufit-conv node ferramentas/cripto.js chave-da-senha SENHA`), troque `senha_conv` e `conv` no json,
+  rode `python ferramentas/gravar_segredos.py` e **peça uma coleta nova de convênios**: até ela acontecer (no máximo 1 hora), o arquivo no ar continua com a chave antiga.
+
 ## Mudar uma lista (operadores, venda dada como paga, ajuste de vendedor, TV das unidades) ou o Balcão
 1. Mude o arquivo de sempre na pasta `dashboard-tv` (versão do PC). Ela continua sendo a fonte de tudo.
 2. Na pasta `ufit-tvs-nuvem`, rode `python publicar.py --enviar`.

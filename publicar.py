@@ -76,7 +76,8 @@ def montar_site(k):
     for nome, (arq, var) in PAGINAS_TV.items():
         h = ler(os.path.join(orig, nome))
         src = 'convenios-dados.js' if arq == 'conv.enc' else 'dados.js'
-        h = trocar(h, f'<script src="{src}"></script>', f'<script src="cripto.js" data-arquivo="{arq}" data-var="{var}"></script>', nome)
+        sal = ' data-sal="ufit-conv"' if arq == 'conv.enc' else ''  # Convênios tem senha própria
+        h = trocar(h, f'<script src="{src}"></script>', f'<script src="cripto.js" data-arquivo="{arq}" data-var="{var}"{sal}></script>', nome)
         h = trocar(h, '\n<script>\n', '\n<script type="text/plain" class="app">\n', nome)
         gravar(os.path.join(site, nome), h)
 

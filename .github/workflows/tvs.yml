@@ -30,6 +30,7 @@ jobs:
       CHAVE_TV: ${{ secrets.CHAVE_TV }}
       CHAVE_INTERNA: ${{ secrets.CHAVE_INTERNA }}
       CHAVE_DP: ${{ secrets.CHAVE_DP }}
+      CHAVE_CONV: ${{ secrets.CHAVE_CONV }}
       UFIT_CONFIG: /tmp/ufit/config
       UFIT_ESTADO: /tmp/ufit/estado
       UFIT_CREDENCIAIS: /tmp/ufit/cred
@@ -76,9 +77,16 @@ jobs:
             node ferramentas/cripto.js cifrar CHAVE_DP /tmp/ufit/saida/dp.json public/dp.enc
           fi
           if [ -f /tmp/ufit/saida/conv.json ]; then
-            node ferramentas/cripto.js cifrar CHAVE_TV /tmp/ufit/saida/conv.json public/conv.enc
+            node ferramentas/cripto.js cifrar CHAVE_CONV /tmp/ufit/saida/conv.json public/conv.enc
           elif [ -s /tmp/ufit/conv-anterior.enc ]; then
-            cp /tmp/ufit/conv-anterior.enc public/conv.enc
+            # entre as coletas (1 por hora) republica o anterior, sempre fechado com a senha dos Convênios
+            # (CHAVE_TV: só para o arquivo que ainda estava com a chave antiga, na virada de 09/11/2026)
+            for c in CHAVE_CONV CHAVE_TV; do
+              if node ferramentas/cripto.js decifrar "$c" /tmp/ufit/conv-anterior.enc /tmp/ufit/conv-aberto.json 2>/dev/null; then
+                node ferramentas/cripto.js cifrar CHAVE_CONV /tmp/ufit/conv-aberto.json public/conv.enc
+                break
+              fi
+            done
           fi
           node ferramentas/cripto.js empacotar CHAVE_INTERNA "$UFIT_ESTADO" public/estado.enc
           ls -la public
