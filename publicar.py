@@ -158,6 +158,8 @@ def main():
             print('nada mudou')
             return
         subprocess.run(['git', 'commit', '-q', '-m', 'Atualiza páginas e listas'], cwd=AQUI, check=True)
+        # a conferência automática do GitHub pode ter criado um commit de destrave
+        subprocess.run(['git', 'pull', '--rebase', '-q'], cwd=AQUI, check=True)
         subprocess.run(['git', 'push', '-q'], cwd=AQUI, check=True)
         print('enviado; o GitHub publica em 1–3 minutos')
 

@@ -47,6 +47,8 @@ O que fica aberto aqui é só o código.
 ## Acompanhar
 - Execuções: https://github.com/ufitanalista/tv/actions (o registro é público: só mostra contagens).
 - Se a TV mostrar "SEM ATUALIZAÇÃO DESDE…", veja a última execução ali.
+- Conferência automática: depois de cada deploy, o passo "Conferir se o site atualizou" compara o `dados.enc` no ar com o recém-publicado.
+  Se em 3 min continuar velho, cria o commit vazio "Destrava o Pages (conferência automática)" (no máximo 1 a cada 20 min) e a coleta seguinte publica de novo.
 - O GitHub desliga as execuções agendadas de projeto público depois de **60 dias sem nenhuma mudança enviada**.
   Qualquer `publicar.py --enviar` com alteração conta; se ficar parado, ele avisa por e-mail e é só religar em Actions.
 

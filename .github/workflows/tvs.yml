@@ -10,7 +10,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write   # só o passo "Conferir se o site atualizou" grava (commit vazio que destrava o Pages)
   pages: write
   id-token: write
 
@@ -36,6 +36,8 @@ jobs:
       SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Abrir listas, estado e credenciais
         env:
@@ -87,3 +89,27 @@ jobs:
 
       - id: publicar
         uses: actions/deploy-pages@v4
+
+      # O deploy às vezes diz "sucesso" e o Pages segue servindo a versão velha (06/11 e 09/11/2026).
+      # O que destrava é um commit novo: a coleta seguinte publica com outro SHA.
+      - name: Conferir se o site atualizou
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          MSG: 'Destrava o Pages (conferência automática)'
+        run: |
+          esperado=$(sha256sum public/dados.enc | cut -d' ' -f1)
+          for i in $(seq 1 12); do
+            no_ar=$(curl -fsS "$SITE_URL/$(node ferramentas/cripto.js variar dados.enc)" | sha256sum | cut -d' ' -f1)
+            if [ "$no_ar" = "$esperado" ]; then echo "site atualizado (tentativa $i)"; exit 0; fi
+            sleep 15
+          done
+          echo "::warning::O site continua com a versão antiga depois do deploy"
+          # no máximo um commit de destrave a cada 20 min
+          if [ "$(git log -1 --format=%s)" = "$MSG" ] && [ $(( $(date +%s) - $(git log -1 --format=%ct) )) -lt 1200 ]; then
+            echo "destrave recente: aguardando"; exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898283+github-actions[bot]@users.noreply.github.com'
+          git commit --allow-empty -q -m "$MSG"
+          git push -q "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" HEAD:main || echo "::warning::não consegui enviar o destrave"
