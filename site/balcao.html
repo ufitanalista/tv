@@ -215,12 +215,53 @@ dialog .fechar { position: absolute; top: 8px; right: 8px; }
   .ficha-anim { animation: entra .22s ease-out; }
   @keyframes entra { from { transform: translateY(6px); } to { transform: none; } }
 }
+/* Minha comissão: botão no trilho + janela só com os números de quem está logado */
+.btn-com { width: 100%; border: 1px solid var(--brand); background: transparent; color: var(--brand); border-radius: 8px; padding: 8px 12px; font: 600 14px var(--body); cursor: pointer; text-align: left; }
+.btn-com:hover { background: var(--brand); color: var(--brand-ink); }
+dialog.com { max-width: min(94vw, 760px); width: 760px; background: var(--bg); color: var(--ink); border-radius: 12px; }
+dialog.com .caixa-com { padding: 22px 24px 24px; display: flex; flex-direction: column; gap: 16px; max-height: 88vh; overflow: auto; }
+.com-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-right: 70px; }
+.com-topo h2 { margin: 0; font: 800 28px/1.05 var(--display); }
+.com-topo p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.com-abas { display: flex; gap: 6px; flex-wrap: wrap; }
+.com-abas button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 14px; font: 600 14px var(--body); cursor: pointer; }
+.com-abas button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.com-previa { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 10px 14px; font-weight: 600; font-size: 14px; }
+.com-grande { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: end; }
+.com-grande .rot { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.com-grande .val { font: 800 46px/1 var(--display); font-variant-numeric: tabular-nums; }
+.com-grande .conta { color: var(--muted); font-size: 14px; text-align: right; }
+.com-numeros { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.com-numeros div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.com-numeros dt { font-size: 12px; color: var(--muted); font-weight: 600; }
+.com-numeros dd { margin: 2px 0 0; font: 800 26px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.com-faixas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.com-faixas span { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; color: var(--muted); background: var(--surface); }
+.com-faixas span b { display: block; font: 800 18px var(--display); color: var(--ink); }
+.com-faixas span.atual { border-color: var(--brand); background: var(--brand-soft); color: var(--ink); }
+.com-meta { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 15px; }
+.com-meta .trilho { height: 8px; background: var(--line); border-radius: 99px; margin-top: 8px; overflow: hidden; }
+.com-meta .trilho i { display: block; height: 100%; background: var(--brand); border-radius: 99px; }
+.com-obs { font-size: 13px; color: var(--muted); margin: 0; }
+.com-vendas { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: auto; }
+.com-vendas table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.com-vendas th, .com-vendas td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.com-vendas th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.com-vendas td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.com-vazio { padding: 18px; color: var(--muted); text-align: center; }
+@media (max-width: 640px) {
+  .com-numeros, .com-faixas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .com-grande { grid-template-columns: minmax(0, 1fr); }
+  .com-grande .conta { text-align: left; }
+  dialog.com .caixa-com { padding: 16px; }
+}
 </style>
 
 <div class="app">
   <aside class="rail">
     <div class="marca"><b>U</b>FIT<small>Central de atendimento</small></div>
     <div class="logado" id="logado"></div>
+    <div id="minhaCom"></div>
     <input id="busca" class="busca" type="search" placeholder="Unidade, cidade ou aula" aria-label="Buscar unidade, cidade ou aula" autocomplete="off">
     <ul id="lista" class="lista" aria-label="Unidades"></ul>
     <p id="vaziobusca" class="vazio-busca" hidden>Nenhuma unidade encontrada.</p>
@@ -232,6 +273,10 @@ dialog .fechar { position: absolute; top: 8px; right: 8px; }
 <dialog id="cartaz" aria-label="Cartaz da grade de aulas">
   <button class="btn fechar" id="fecharCartaz">Fechar</button>
   <img id="cartazImg" alt="">
+</dialog>
+<dialog id="comissao" class="com" aria-label="Minha comissão">
+  <button class="btn fechar" id="fecharComissao">Fechar</button>
+  <div class="caixa-com" id="comCorpo"></div>
 </dialog>
 <section id="entrada" class="entrada" aria-label="Quem está atendendo" hidden>
   <div class="caixa">
@@ -534,7 +579,99 @@ function renderLogado() {
   document.getElementById("logado").innerHTML = o
     ? `<div><span>Atendendo</span><strong>${esc(o.nome)}</strong></div><button id="trocar">Trocar</button>`
     : `<div><span>Atendendo</span><strong>Ninguém</strong></div><button id="trocar">Entrar</button>`;
+  document.getElementById("minhaCom").innerHTML = COMISSAO_ON && o
+    ? `<button class="btn-com" id="abrirComissao">💰 Minha comissão</button>` : "";
 }
+
+// ---------- Minha comissão ----------
+// Cada operador vê SÓ a própria comissão. Quem decide quem é o operador é o SERVIDOR (login do portal), não esta página:
+//   PONTO DE INTEGRAÇÃO → o portal define, antes deste script:  window.UFIT_COMISSAO_URL = "/api/minha-comissao";
+//   Essa rota lê o operador da sessão de quem está logado e devolve só os dados dele, no formato de
+//   dashboard-tv/comissao.py → minha_comissao(). A página não manda nome nenhum: não dá para pedir a de outra pessoa.
+// Sem a URL (Balcão de hoje, sem login), a área fica escondida; balcao.html#comissao mostra uma PRÉVIA com números fictícios.
+const COMISSAO_URL = window.UFIT_COMISSAO_URL || "";
+const COMISSAO_ON = !!COMISSAO_URL || location.hash === "#comissao";
+let comDados = null, comAba = 0;
+
+function comissaoExemplo(nome) {
+  const h = new Date(), ini = new Date(h.getFullYear(), h.getMonth(), 1), pas = new Date(h.getFullYear(), h.getMonth() - 1, 1);
+  const iso = d => d.toISOString().slice(0, 10), mes = d => d.toLocaleDateString("pt-BR", { month: "long" }).replace(/^./, c => c.toUpperCase());
+  const vendas = (d, n) => Array.from({ length: n }, (_, i) => ({ quando: iso(new Date(d.getFullYear(), d.getMonth(), 1 + (i % 20))) + "T10:00",
+    cliente: "Cliente exemplo " + (i + 1), plano: ["PLANO RECORRENTE FIT", "PLANO VIP ANUAL", "PLANO FIT ANUAL"][i % 3], unidade: "Unidade exemplo", valor: [99.9, 1318.8, 958.8][i % 3] })).reverse();
+  const fimPas = new Date(h.getFullYear(), h.getMonth(), 0);
+  return { operador: nome, atualizadoEm: h.toISOString(), exemplo: true,
+    regra: { texto: "Média = vendas pagas ÷ dias trabalhados · 2 a 4 por dia = R$ 2 por venda · 5 a 6 = R$ 5 · 7 ou mais = R$ 7 · abaixo de 2 não comissiona.",
+             faixas: [{ mediaMinima: 7, porVenda: 7 }, { mediaMinima: 5, porVenda: 5 }, { mediaMinima: 2, porVenda: 2 }] },
+    periodos: [
+      { rotulo: mes(ini) + " (até hoje)", de: iso(ini), ate: iso(h), fechado: false, vendas: 13, dias: 8, diasDiscador: 8, media: 1.63, porVenda: 0, comissao: 0,
+        ajuste: null, foraDaConta: 0, proximaFaixa: { porVenda: 2, mediaMinima: 2, faltamVendas: 3 }, listaVendas: vendas(ini, 13) },
+      { rotulo: mes(pas), de: iso(pas), ate: iso(fimPas), fechado: true, vendas: 34, dias: 15, diasDiscador: 17, media: 2.27, porVenda: 2, comissao: 68,
+        ajuste: { dias: 15, vendasDesde: null, motivo: "exemplo de dias definidos pela gestão" }, foraDaConta: 0, proximaFaixa: null, listaVendas: vendas(pas, 34) }
+    ] };
+}
+
+async function buscarComissao() {
+  if (!COMISSAO_URL) return comissaoExemplo((DADOS.operadores.find(x => x.chave === consultor) || {}).nome || "Operador");
+  const r = await fetch(COMISSAO_URL, { credentials: "include", cache: "no-store" });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+
+function renderComissao() {
+  const el = document.getElementById("comCorpo"), d = comDados;
+  if (!d) { el.innerHTML = `<div class="com-vazio">Carregando…</div>`; return; }
+  if (d.erro) { el.innerHTML = `<div class="com-topo"><h2>Minha comissão</h2></div><div class="com-previa">${esc(d.erro)}</div>`; return; }
+  const p = d.periodos[comAba] || d.periodos[0];
+  const n2 = v => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const faixas = [{ mediaMinima: 0, porVenda: 0 }, ...d.regra.faixas.slice().sort((a, b) => a.mediaMinima - b.mediaMinima)];
+  const nomeFaixa = (f, i) => i === 0 ? "abaixo de 2" : i === faixas.length - 1 ? `${f.mediaMinima} ou mais` : `${f.mediaMinima} a ${faixas[i + 1].mediaMinima - 1}`;
+  const prox = p.proximaFaixa;
+  const meta = p.fechado ? "" : prox
+    ? (prox.faltamVendas === 0
+        ? `<div class="com-meta">✅ Você já está na média para <b>${brl(prox.porVenda)} por venda</b>.</div>`
+        : `<div class="com-meta">Faltam <b>${prox.faltamVendas} venda${prox.faltamVendas > 1 ? "s" : ""}</b> para chegar a <b>${brl(prox.porVenda)} por venda</b>
+             (média ${prox.mediaMinima}/dia com os ${p.dias} dias trabalhados até agora).
+             <div class="trilho"><i style="width:${Math.min(100, Math.round(p.media / prox.mediaMinima * 100))}%"></i></div></div>`)
+    : p.dias ? `<div class="com-meta">🏆 Você está na faixa mais alta.</div>` : "";
+  const obs = [
+    p.ajuste ? `Dias trabalhados definidos pela gestão: ${p.ajuste.dias ?? p.dias}${p.ajuste.motivo ? " (" + esc(p.ajuste.motivo) + ")" : ""}. No discador foram ${p.diasDiscador}.` : `Dias trabalhados = dias com ligações no seu ramal do discador.`,
+    p.foraDaConta ? `${p.foraDaConta} venda(s) antes de ${dataBR(p.ajuste && p.ajuste.vendasDesde)} ficaram fora da conta.` : "",
+    p.fechado ? "" : "O mês ainda está aberto: o valor pode mudar até o último dia.",
+  ].filter(Boolean).join(" ");
+  document.getElementById("comCorpo").innerHTML = `
+    <div class="com-topo"><div><h2>Minha comissão</h2><p>${esc(d.operador)} · vendas pagas, pela data do pagamento · atualizado ${d.atualizadoEm ? new Date(d.atualizadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—"}</p></div></div>
+    ${d.exemplo ? `<div class="com-previa">Prévia com números de exemplo. No portal, cada operador vai ver aqui os próprios números.</div>` : ""}
+    <div class="com-abas" role="group" aria-label="Período">${d.periodos.map((x, i) => `<button data-com-aba="${i}" aria-pressed="${i === comAba}">${esc(x.rotulo)}</button>`).join("")}</div>
+    <div class="com-grande"><div><div class="rot">${p.fechado ? "Comissão do mês" : "Comissão até agora"}</div><div class="val">${brl(p.comissao)}</div></div>
+      <div class="conta">${p.vendas} vendas × ${brl(p.porVenda)} por venda</div></div>
+    <dl class="com-numeros">
+      <div><dt>Vendas pagas</dt><dd>${p.vendas}</dd></div>
+      <div><dt>Dias trabalhados</dt><dd>${p.dias}${p.ajuste ? " *" : ""}</dd></div>
+      <div><dt>Média por dia</dt><dd>${p.dias ? n2(p.media) : "—"}</dd></div>
+      <div><dt>R$ por venda</dt><dd>${p.porVenda ? brl(p.porVenda) : "—"}</dd></div>
+    </dl>
+    <div class="com-faixas" aria-label="Faixas da comissão">${faixas.map((f, i) =>
+      `<span class="${f.porVenda === p.porVenda ? "atual" : ""}"><b>${f.porVenda ? brl(f.porVenda) + "/venda" : "Sem comissão"}</b>média ${nomeFaixa(f, i)}</span>`).join("")}</div>
+    ${meta}
+    <p class="com-obs">${obs}</p>
+    <div class="com-vendas">${p.listaVendas.length ? `<table><thead><tr><th>Pagamento</th><th>Cliente</th><th>Plano</th><th>Unidade</th><th class="n">Valor</th></tr></thead><tbody>${
+      p.listaVendas.map(v => `<tr><td>${dataBR(v.quando.slice(0, 10))} ${v.quando.slice(11, 16)}</td><td>${esc(v.cliente)}</td><td>${esc(v.plano)}</td><td>${esc(v.unidade)}</td><td class="n">${brl(v.valor)}</td></tr>`).join("")
+    }</tbody></table>` : `<div class="com-vazio">Nenhuma venda paga neste período.</div>`}</div>`;
+}
+
+async function abrirComissao() {
+  comDados = null; comAba = 0; renderComissao();
+  document.getElementById("comissao").showModal();
+  try { comDados = await buscarComissao(); }
+  catch (e) { comDados = { erro: "Não consegui buscar a sua comissão agora. Tente de novo em 1 minuto." }; }
+  renderComissao();
+}
+document.getElementById("minhaCom").addEventListener("click", e => { if (e.target.id === "abrirComissao") abrirComissao(); });
+document.getElementById("comCorpo").addEventListener("click", e => {
+  const b = e.target.closest("[data-com-aba]"); if (b) { comAba = +b.dataset.comAba; renderComissao(); }
+});
+document.getElementById("fecharComissao").addEventListener("click", () => document.getElementById("comissao").close());
+document.getElementById("comissao").addEventListener("click", e => { if (e.target.id === "comissao") e.target.close(); });
 
 function abrirEntrada() {
   document.getElementById("pessoas").innerHTML = DADOS.operadores.map(o =>

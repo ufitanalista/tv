@@ -24,7 +24,9 @@ LISTAS = ['operadores.csv', 'tabulacoes.csv', 'ajustes_vendas.csv', 'vendas_ganh
 ESTADO = ['vendas_mes.json', 'convenios.json', 'govoice_token.json']
 PAGINAS_TV = {'tv1.html': ('dados.enc', 'DADOS'), 'tv2.html': ('dados.enc', 'DADOS'),
               'tv-unidades.html': ('dados.enc', 'DADOS'), 'convenios.html': ('conv.enc', 'CONV')}
-COPIAR = ['tv.css', 'nosleep.min.js', 'logo_ufit.png']
+COPIAR = ['tv.css', 'nosleep.min.js', 'logo_ufit.png',
+          # sons da TV 2 (ranking gamificado, 16/11/2026)
+          'som-venda.mp3', 'som-ultrapassagem.m4a', 'som-lider.m4a', 'som-m1.m4a', 'som-m2.m4a', 'som-m3.m4a', 'som-super-meta.mp3']
 
 
 def chaves():
@@ -132,7 +134,7 @@ def conferir():
     ruins = proibidos()
     erro = False
     for a in filter(None, arquivos):
-        if a.endswith('.enc') or a.endswith('.png'):
+        if a.endswith(('.enc', '.png', '.mp3', '.m4a')):
             continue
         txt = open(os.path.join(AQUI, a), encoding='utf-8', errors='replace').read()
         achou = [x for x in ruins if x in txt]
