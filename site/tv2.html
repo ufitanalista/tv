@@ -2511,6 +2511,23 @@ function ligarTV(){
   var avisa = function(){ av.style.display = (!somOk() && document.documentElement.getAttribute("data-modo") === "tv") ? "" : "none"; };
   avisa(); setInterval(avisa, 3000);
   ["keydown", "click", "touchstart"].forEach(function(ev){ document.addEventListener(ev, function(){ setTimeout(avisa, 500); }); });
+  // tv2.html#repetir=4,5,6 → repete a comemoração da 4ª, 5ª e 6ª venda paga de hoje (na ordem do dia),
+  // assim que o som estiver liberado (aperte OK). Depois limpa o endereço.
+  var rep = /repetir=([\d,]+)/.exec(location.hash);
+  if (rep){
+    var pos = rep[1].split(",").map(Number).filter(function(n){ return n > 0; }), feito = false;
+    var tenta = setInterval(function(){
+      var d = window.DADOS;
+      if (feito || !d || !somOk()) return;
+      feito = true; clearInterval(tenta);
+      var a = new Date(), p2 = function(n){ return (n < 10 ? "0" : "") + n; };
+      var hoje = a.getFullYear() + "-" + p2(a.getMonth() + 1) + "-" + p2(a.getDate());
+      var lista = (d.vendasRecentes || []).filter(function(s){ return String(s.quando || "").slice(0, 10) === hoje; })
+        .sort(function(x, y){ return String(x.quando).localeCompare(String(y.quando)); });
+      pos.forEach(function(n){ var s = lista[n - 1]; if (s) festa({ tipo: "venda", nome: String(s.operador || "Time"), plano: s.plano, unidade: s.unidade, valor: num(s.valor) }); });
+      try { history.replaceState(null, "", "#"); } catch (e) {}
+    }, 1000);
+  }
 }
 
 /* ---------- partida ---------- */
