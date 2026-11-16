@@ -521,6 +521,25 @@ body::after{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:0;
   .clock{text-align:left}
   .kpi.has-g{padding-right:4.4rem}
 }
+
+/* ===== Modo TV: letras maiores e tudo cabendo numa tela ===== */
+:root[data-modo="tv"]{font-size:min(1.4vw,2.5vh)}
+:root[data-modo="tv"] body{overflow:hidden}
+:root[data-modo="tv"] .page{height:100vh;box-sizing:border-box;padding:.5rem 1.1rem .6rem;gap:.55rem;overflow:hidden}
+:root[data-modo="tv"] .navbar,:root[data-modo="tv"] .eyebrow,:root[data-modo="tv"] .legenda,:root[data-modo="tv"] .kpi .s{display:none}
+:root[data-modo="tv"] .view:not([hidden]){flex:1;min-height:0;gap:.55rem}
+:root[data-modo="tv"] .view > *{min-height:0}
+:root[data-modo="tv"] .kpis{grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr))}
+:root[data-modo="tv"] .kpi{padding:.45rem 1rem;border-radius:16px}
+:root[data-modo="tv"] .arena{flex:1;min-height:0;align-items:stretch}
+:root[data-modo="tv"] .arena > .board{min-height:0;overflow:hidden}
+:root[data-modo="tv"] .row{padding:.3rem .7rem;gap:.6rem}
+:root[data-modo="tv"] .rows{gap:.25rem}
+:root[data-modo="tv"] .row .mid{gap:.25rem}
+:root[data-modo="tv"] .row .avatar{--av:1.8rem}
+:root[data-modo="tv"] .row .val{flex-direction:row;align-items:baseline;gap:.6rem}
+:root[data-modo="tv"] .split{flex:1;min-height:0;overflow:hidden;grid-template-rows:minmax(0,1fr)}
+:root[data-modo="tv"] .split > .panel{min-height:0;overflow:hidden;-webkit-mask-image:linear-gradient(#000 85%,transparent);mask-image:linear-gradient(#000 85%,transparent)}
   #pp { --fundo:#060606; --texto:#F5F5F4; --texto-2:#C9C9C9; --texto-3:#9A9A9A; --cartao:#141414; --cartao-2:#1f1f1f; --linha:rgba(255,255,255,.14); --amarelo:#FFC20E; --pausa:#FFC20E; }
   /* Filtro de período (DP: comissão). Fica fora do palco: tamanho normal de computador, com rolagem. */
   #pp { position: fixed; inset: 0; z-index: 200; background: var(--fundo, #0b0a09); color: var(--texto); overflow-y: auto; display: none; font-family: Geist, system-ui, sans-serif; }
