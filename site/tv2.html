@@ -1615,7 +1615,7 @@ function tocarArquivo(ev){
   });
 }
 function tocar(evento, idForcado){
-  if (!somOn || !audioCtx) return Promise.resolve(0);
+  if (!somOn || !audioCtx || audioCtx.state !== "running") return Promise.resolve(0);
   var id = idForcado || prefs[evento];
   if (id === "arquivo"){
     return tocarArquivo(evento).then(function(seg){ if (!seg){ tocar(evento, SONS[evento][0][0]); return 0; } return seg; });
@@ -2499,8 +2499,18 @@ function ligarTV(){
     liga(); setInterval(liga, 60000);
     ["keydown", "click", "touchstart"].forEach(function(ev){ document.addEventListener(ev, liga); });
   }
-  // a TV só libera som depois de um toque: qualquer OK do controle ou clique já liga
-  ["keydown", "click", "touchstart"].forEach(function(ev){ document.addEventListener(ev, function(){ if (!somOn) destravarSom(); }); });
+  // a TV só libera som depois de um toque: qualquer OK do controle ou clique já liga.
+  // Tenta já na abertura (alguns navegadores de TV deixam) e mostra aviso vermelho enquanto estiver mudo.
+  var somOk = function(){ return !!audioCtx && audioCtx.state === "running"; };
+  try { destravarSom(); } catch (e) {}
+  ["keydown", "click", "touchstart"].forEach(function(ev){ document.addEventListener(ev, function(){ if (!somOk()) destravarSom(); }); });
+  var av = document.createElement("div"); av.id = "som-aviso";
+  av.innerHTML = "🔇 Som desligado: aperte <b>OK</b> no controle para ativar o som das vendas";
+  av.style.cssText = "position:fixed;left:50%;bottom:4vh;transform:translateX(-50%);z-index:300;background:#d03b3b;color:#fff;font:700 1.6rem Geist,system-ui,sans-serif;padding:.6rem 1.4rem;border-radius:12px;white-space:nowrap;box-shadow:0 6px 24px rgba(0,0,0,.5);display:none";
+  document.body.appendChild(av);
+  var avisa = function(){ av.style.display = (!somOk() && document.documentElement.getAttribute("data-modo") === "tv") ? "" : "none"; };
+  avisa(); setInterval(avisa, 3000);
+  ["keydown", "click", "touchstart"].forEach(function(ev){ document.addEventListener(ev, function(){ setTimeout(avisa, 500); }); });
 }
 
 /* ---------- partida ---------- */
