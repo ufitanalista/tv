@@ -2294,6 +2294,17 @@ function festaMeta(nivel){
   }
   requestAnimationFrame(quadro);
 }
+
+var META_EQUIPE = 10, equipeIni = false;
+function totalEquipeHoje(){ return arr(D && D.operadores).reduce(function(a, o){ return a + num(o.vendasHoje && o.vendasHoje.qtd); }, 0); }
+function conferirEquipe(){
+  if (!D || D.exemplo) return;
+  var a = new Date(), chave = "ufit-equipe-" + a.getFullYear() + "-" + (a.getMonth() + 1) + "-" + a.getDate();
+  var feito = false; try { feito = localStorage.getItem(chave) === "1"; } catch (e) {}
+  var bateu = totalEquipeHoje() >= META_EQUIPE;
+  if (bateu && !feito){ try { localStorage.setItem(chave, "1"); } catch (e) {} if (equipeIni) festa({ tipo: "equipe", qtd: META_EQUIPE }); }
+  equipeIni = true;
+}
 function festa(item){ fila.push(item); if (!festaAtiva) proximaFesta(); }
 function proximaFesta(){
   pararSomAtual(); pararFogos();
@@ -2306,6 +2317,11 @@ function proximaFesta(){
     card.append(h("div", { class: "kick" }, "Nova venda"), h("div", { class: "who2" }, it.nome),
       h("div", { class: "det" }, [it.plano, it.unidade].filter(Boolean).join(" · ")), it.valor ? h("div", { class: "amt" }, brl(it.valor, true)) : null);
     som = tocar("venda"); explosaoDinheiro();
+  } else if (it.tipo === "equipe"){
+    card.className = "party-card meta n4";
+    card.append(h("div", { class: "kick" }, "🎉 Parabéns, equipe! 🎉"), h("div", { class: "who2" }, it.qtd + "ª venda do dia!"),
+      h("div", { class: "det" }, totalEquipeHoje() >= it.qtd ? totalEquipeHoje() + " vendas hoje · todo mundo junto" : "todo mundo junto"));
+    dur = Math.max(dur, 12); som = tocar("meta"); champanhe();
   } else if (it.tipo === "lider"){
     card.className = "party-card lider";
     var cw = h("div", { class: "big-crown", "aria-hidden": "true" }); cw.innerHTML = CROWN;
@@ -2357,6 +2373,7 @@ function detectarComemoracoes(lista){
   }
   if (novoLider){ var nl = lista.filter(function(p){ return p.id === novoLider; })[0]; if (nl) festa({ tipo: "lider", nome: nl.nome, rank: 1, de: ultQtd && ultQtd[nl.id] ? ultQtd[nl.id].rank : null, passou: [] }); }
   ultQtd = curQ; ultLideres = lideres;
+  conferirEquipe();
   var key = chaveMetas();
   var m = metasDia();
   var atual = {}; lista.forEach(function(p){ var n = nivelDe(p.qtd, m); if (n) atual[p.id] = n; });
@@ -2515,9 +2532,10 @@ function ligarTV(){
   ["keydown", "click", "touchstart"].forEach(function(ev){ document.addEventListener(ev, function(){ setTimeout(avisa, 500); }); });
   // tv2.html#repetir=4,5,6 → repete a comemoração da 4ª, 5ª e 6ª venda paga de hoje (na ordem do dia),
   // assim que o som estiver liberado (aperte OK). Depois limpa o endereço.
-  var rep = /repetir=([\d,]+)/.exec(location.hash);
+  // tv2.html#repetir=10,equipe → também repete o "Parabéns, equipe!"
+  var rep = /repetir=([\w,]+)/.exec(location.hash);
   if (rep){
-    var pos = rep[1].split(",").map(Number).filter(function(n){ return n > 0; }), feito = false;
+    var pos = rep[1].split(","), feito = false;
     var tenta = setInterval(function(){
       var d = window.DADOS;
       if (feito || !d || !somOk()) return;
@@ -2526,7 +2544,7 @@ function ligarTV(){
       var hoje = a.getFullYear() + "-" + p2(a.getMonth() + 1) + "-" + p2(a.getDate());
       var lista = (d.vendasRecentes || []).filter(function(s){ return String(s.quando || "").slice(0, 10) === hoje; })
         .sort(function(x, y){ return String(x.quando).localeCompare(String(y.quando)); });
-      pos.forEach(function(n){ var s = lista[n - 1]; if (s) festa({ tipo: "venda", nome: String(s.operador || "Time"), plano: s.plano, unidade: s.unidade, valor: num(s.valor) }); });
+      pos.forEach(function(n){ if (/^equipe$/i.test(n)) return festa({ tipo: "equipe", qtd: META_EQUIPE }); var s = lista[Number(n) - 1]; if (s) festa({ tipo: "venda", nome: String(s.operador || "Time"), plano: s.plano, unidade: s.unidade, valor: num(s.valor) }); });
       try { history.replaceState(null, "", "#"); } catch (e) {}
     }, 1000);
   }
