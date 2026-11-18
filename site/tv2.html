@@ -1141,14 +1141,16 @@ function saleItem(s, pend){
 }
 function viewVendas(){
   var v = $("v-vendas"); v.textContent = "";
-  var pagas = arr(D.ultimasVendas), pend = arr(D.vendasPendentes);
+  var pagas = arr(D.vendasRecentes).length ? arr(D.vendasRecentes) : arr(D.ultimasVendas), pend = arr(D.vendasPendentes);
   var hoje = new Date().toDateString();
   var pagasHoje = pagas.filter(function(s){ var d = toDate(s.quando); return d && d.toDateString() === hoje; });
-  var totPH = pagasHoje.reduce(function(a, s){ return a + num(s.valor); }, 0);
+  var totPH = pagasHoje.reduce(function(a, s){ return a + num(s.valor); }, 0), qtdPH = pagasHoje.length;
+  var somaOps = arr(D.operadores).reduce(function(a, o){ var x = o.vendasHoje || {}; a.q += num(x.qtd); a.v += num(x.valor); return a; }, { q: 0, v: 0 });
+  if (somaOps.q > qtdPH){ qtdPH = somaOps.q; totPH = somaOps.v; }
   var totPend = pend.reduce(function(a, s){ return a + num(s.valor); }, 0);
   var venc = pend.filter(function(s){ return s.vencida; }).length;
   v.append(h("div", { class: "kpis" },
-    kpi("g", "Pagas hoje", String(pagasHoje.length), brl(totPH, true)),
+    kpi("g", "Pagas hoje", String(qtdPH), brl(totPH, true)),
     kpi("a", "Aguardando pagamento", String(pend.length), brl(totPend, true)),
     kpi(venc ? "" : "v", "Links vencidos", String(venc), venc ? "mandar link novo hoje" : "nenhum link vencido")));
   var lp = h("ol", { class: "sales" }); pagas.slice(0, 9).forEach(function(s){ lp.append(saleItem(s, false)); });
