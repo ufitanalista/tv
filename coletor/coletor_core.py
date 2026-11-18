@@ -115,6 +115,11 @@ class GoVoice:
             return http_json(url, h)
 
 
+def so_ramal(x):
+    """GoVoice novo (desde 17/11/2026) manda "1001@srv293.discador…" ou "PJSIP/1001@…"; o resto do sistema usa só "1001"."""
+    return str(x or '').split('/')[-1].split('@')[0].strip()
+
+
 def status_tv(s):
     """Status do GoVoice → status da TV."""
     s = norm(s)
@@ -133,7 +138,7 @@ def contagem(rel):
 
 def coletar_govoice(gv, ops_csv):
     agentes = gv.get('/api/agents')                      # id interno ↔ ramal (traz senhas SIP: não guardar)
-    id_por_ramal = {a['endpoint_id']: a['id'] for a in agentes}
+    id_por_ramal = {so_ramal(a['endpoint_id']): a['id'] for a in agentes}
     visao = gv.get('/api/agents/overview')               # status ao vivo + números do dia
     cdr = gv.get('/api/cdr/report', window='today')['window']['metrics']
     campanhas = gv.get('/api/campaigns')
@@ -153,7 +158,7 @@ def coletar_govoice(gv, ops_csv):
     por_ramal = {o['ramal'].strip(): o for o in ops_csv}
     operadores = []
     for a in visao:
-        ramal = a['extension']
+        ramal = so_ramal(a['extension'])
         o = por_ramal.get(ramal, {})
         # ramal fora de operadores.csv só aparece se estiver logado ou já tiver atendido hoje
         if not o and status_tv(a.get('status')) == 'offline' and not a.get('atendHoje'):
@@ -178,7 +183,7 @@ def coletar_govoice(gv, ops_csv):
     ramais_tv = {o['ramal'] for o in operadores}
     equipes = []
     for f in filas:
-        ramais = sorted({m['interface'].split('/')[-1] for m in membros if m['queue_name'] == f} & ramais_tv)
+        ramais = sorted({so_ramal(m['interface']) for m in membros if m['queue_name'] == f} & ramais_tv)
         equipes.append({
             'nome': f,
             'campanhas': [{'nome': c['name'], 'status': c['status']} for c in campanhas if c.get('queue_name') == f and not c.get('deleted_at')],
@@ -387,7 +392,7 @@ def dias_discador(gv, guarda, hoje):
     c = guarda.ler('dias_gv') or {}
     if c.get('desde') != DISCADOR_DESDE:
         c = {'desde': DISCADOR_DESDE, 'dias': {}}
-    ramais = sorted({a['endpoint_id'] for a in gv.get('/api/agents') if a.get('endpoint_id')})
+    ramais = sorted({a['endpoint_id'] for a in gv.get('/api/agents') if a.get('endpoint_id')})  # nome completo, como o CDR pede
     dia, feitos, mudou = datetime.strptime(DISCADOR_DESDE, '%Y-%m-%d').date(), 0, False
     while dia <= hoje:
         d = dia.isoformat()
@@ -396,12 +401,16 @@ def dias_discador(gv, guarda, hoje):
             for r in ramais:
                 n = gv.get('/api/cdr', start_date=d, end_date=d, extension=r, limit=1)['meta']['item_count']
                 if n:
-                    cont[r] = n
+                    cont[so_ramal(r)] = n
             if dia == hoje:
                 hoje_cont = cont
             else:
                 c['dias'][d], feitos, mudou = cont, feitos + 1, True
         dia += timedelta(days=1)
+    # dias guardados com o nome novo do ramal ("1001@srv…") voltam para "1001"
+    for d, cont in c['dias'].items():
+        if any('@' in r for r in cont):
+            c['dias'][d], mudou = {so_ramal(r): n for r, n in cont.items()}, True
     if mudou:
         guarda.gravar('dias_gv', c)
     return dict(c['dias'], **{hoje.isoformat(): hoje_cont})
