@@ -2532,6 +2532,19 @@ function ligarTV(){
   ["keydown", "click", "touchstart"].forEach(function(ev){ document.addEventListener(ev, function(){ setTimeout(avisa, 500); }); });
   // tv2.html#repetir=4,5,6 → repete a comemoração da 4ª, 5ª e 6ª venda paga de hoje (na ordem do dia),
   // assim que o som estiver liberado (aperte OK). Depois limpa o endereço.
+  // repetição mandada pelos dados (repetir_vendas.csv → DADOS.repetir): cada TV toca uma vez cada pedido, com o som liberado
+  setInterval(function(){
+    var d = window.DADOS, l = d && d.repetir;
+    if (!l || !l.length || !somOk() || !D) return;
+    l.forEach(function(r){
+      var k = "ufit-rep-" + r.chave, ja = false;
+      try { ja = localStorage.getItem(k) === "1"; } catch (e) {}
+      if (ja) return;
+      try { localStorage.setItem(k, "1"); } catch (e) {}
+      if (r.tipo === "equipe") festa({ tipo: "equipe", qtd: META_EQUIPE });
+      else if (r.venda) festa({ tipo: "venda", nome: String(r.venda.operador || "Time"), plano: r.venda.plano, unidade: r.venda.unidade, valor: num(r.venda.valor) });
+    });
+  }, 3000);
   // tv2.html#repetir=10,equipe → também repete o "Parabéns, equipe!"
   var rep = /repetir=([\w,]+)/.exec(location.hash);
   if (rep){
