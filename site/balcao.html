@@ -234,6 +234,32 @@ dialog.com .com-grande { grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
 @media (max-width: 640px) { dialog.com .com-grande { grid-template-columns: minmax(0, 1fr); } }
 .btn-treino { width: 100%; margin-top: 6px; border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 8px 12px; font: 600 14px var(--body); text-align: left; cursor: default; }
 @media (max-width: 640px) { .com-hoje { grid-template-columns: minmax(0, 1fr); } }
+/* WhatsApp esperando ação */
+.whats-resumo { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.whats-pilula { border-radius: 999px; padding: 4px 12px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; }
+.whats-colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-bottom: 10px; }
+.whats-col { border-radius: 10px; border: 1px solid var(--line); border-top-width: 5px; background: var(--bg); padding: 12px; min-width: 0; }
+.whats-cab { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+.whats-cab b { display: block; font-size: 15px; }
+.whats-cab span { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.whats-cab strong { font: 800 30px/1 var(--display); font-variant-numeric: tabular-nums; }
+.whats-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.whats-col li { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.whats-quem { min-width: 0; }
+.whats-quem b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.whats-tel { white-space: nowrap; border: 0; background: none; padding: 0; font: 500 12.5px var(--body); color: var(--muted); cursor: pointer; }
+.whats-tel:hover { color: var(--ink); text-decoration: underline; }
+.whats-tempo { white-space: nowrap; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700; }
+.whats-tempo.t-novo { background: #dff3e1; color: #1d6b2a; } .whats-tempo.t-medio { background: #fff1c7; color: #7a5a00; }
+.whats-tempo.t-velho { background: #ffe0cc; color: #9a3d00; } .whats-tempo.t-muito { background: #ffd6d6; color: #a11d1d; }
+.whats-vazio { color: var(--muted); font-size: 14px; margin: 4px 0; }
+.whats-ok { font-size: 16px; font-weight: 600; color: var(--ok); }
+.whats-col.vermelho { border-top-color: #e53935; } .whats-col.vermelho .whats-cab strong { color: #e53935; }
+.whats-col.laranja { border-top-color: #fb8c00; } .whats-col.laranja .whats-cab strong { color: #fb8c00; }
+.whats-col.roxo { border-top-color: #8e44ad; } .whats-col.roxo .whats-cab strong { color: #8e44ad; }
+.whats-col.azul { border-top-color: #1e88e5; } .whats-col.azul .whats-cab strong { color: #1e88e5; }
+.whats-pilula.vermelho { background: #fde4e3; color: #b71c1c; } .whats-pilula.laranja { background: #ffeed9; color: #a85400; }
+.whats-pilula.roxo { background: #f1e3f8; color: #6c2d8a; } .whats-pilula.azul { background: #e1effd; color: #0f5aa8; }
 /* login (online) e Meu desempenho */
 #passoNome:not([hidden]) { display: flex; flex-direction: column; gap: 22px; }
 .login { display: flex; flex-direction: column; gap: 14px; }
@@ -681,11 +707,52 @@ function comissaoExemplo(nome) {
   return { operador: nome, atualizadoEm: h.toISOString(), exemplo: true, regra: { faixas },
     hoje: { dia: iso(h), vendas: 4, sigla: "M1", porVenda: 2, comissao: 8, proxima: { sigla: "M2", nome: "Prata", minimo: 5, porVenda: 5, faltam: 1, comissaoSeChegar: 25 } },
     atendimento: { ligacoes: { atendidas: 48, faladoSeg: 5400, tmaSeg: 110, logadoSeg: 14000 },
-      conversas: { abertas: 40, contagem: { semResposta: 1, retorno: 3, atencao: 6, followup: 4 }, pendentes: [{ situacao: "Esperando a sua resposta", cliente: "Cliente exemplo", telefone: "55479...", paradoDias: 0.3 }] } },
+      conversas: { abertas: 40, contagem: { semResposta: 1, retorno: 3, atencao: 6, followup: 4 }, grupos: [
+      { id: "semResposta", total: 1, lista: [{ cliente: "Cliente exemplo", telefone: "5547900000000", paradoDias: 0.05 }] },
+      { id: "retorno", total: 3, lista: [{ cliente: "Cliente exemplo 2", telefone: "5547900000001", paradoDias: 0.4 }] },
+      { id: "janela", total: 2, lista: [{ cliente: "Cliente exemplo 3", telefone: "5547900000002", paradoDias: 2.5 }] },
+      { id: "followup", total: 4, lista: [{ cliente: "Cliente exemplo 4", telefone: "5547900000003", paradoDias: 4 }] }] } },
     periodos: [{ rotulo: "Este mês (até hoje)", fechado: false, vendas: 34, valorVendido: 3396.6, comissao: com, diasTrabalhados: 10, diasNaFaixa: { M1: 4, M2: 2, M3: 1, SM: 0 }, dias,
       metaMes: { diasUteis: 25, diasUteisPassados: 10, faixas: faixas.map(f => ({ sigla: f.sigla, nome: f.nome, meta: f.minimo * 25, ateHoje: f.minimo * 10 })) },
       projecao: { valor: com * 2.4, texto: "Estimativa pela média por dia trabalhado." },
       listaVendas: [{ quando: iso(h) + "T10:00", cliente: "Cliente exemplo", plano: "PLANO FIT ANUAL", unidade: "Unidade exemplo", valor: 79.9 }] }] };
+}
+
+// Clientes do WhatsApp esperando ação, em 4 colunas coloridas, do mais urgente para o menos urgente
+const WHATS = {
+  semResposta: { cor: "vermelho", icone: "🔴", titulo: "Sem nenhuma resposta", acao: "O cliente escreveu e ninguém respondeu ainda. Responda agora." },
+  retorno:     { cor: "laranja",  icone: "🟠", titulo: "Esperando a sua resposta", acao: "A conversa andou e o cliente falou por último. Responda." },
+  janela:      { cor: "roxo",     icone: "🟣", titulo: "Esperando há mais de 24 h", acao: "A janela do WhatsApp fechou: só dá para chamar com um modelo." },
+  followup:    { cor: "azul",     icone: "🔵", titulo: "Fazer follow-up", acao: "Você falou por último e o cliente sumiu há 1 dia ou mais. Chame de novo." }
+};
+function tempoParado(dias) {
+  const h = dias * 24;
+  if (h < 1) return "menos de 1 h";
+  if (h < 24) return Math.round(h) + " h";
+  const n = Math.floor(dias);
+  return n + (n === 1 ? " dia" : " dias");
+}
+function nivelTempo(dias) { return dias * 24 < 2 ? "t-novo" : dias < 1 ? "t-medio" : dias < 3 ? "t-velho" : "t-muito"; }
+function renderWhats(grupos, atualizadoEm) {
+  const total = grupos.reduce((s, g) => s + g.total, 0);
+  if (!total) return `<section class="des-cartao"><div class="des-tit">Seus clientes no WhatsApp</div><div class="whats-ok">✅ Nenhum cliente esperando ação. Tudo em dia!</div></section>`;
+  const min = atualizadoEm ? Math.max(0, Math.round((Date.now() - new Date(atualizadoEm)) / 60000)) : null;
+  return `<section class="des-cartao">
+    <div class="des-tit">Seus clientes no WhatsApp esperando ação <span class="des-sub">· EvoTalks${min != null ? ` · atualizado há ${min} min` : ""}</span></div>
+    <div class="whats-resumo">${grupos.map(g => { const w = WHATS[g.id];
+      return `<span class="whats-pilula ${w.cor}">${w.icone} <b>${g.total}</b> ${w.titulo.toLowerCase()}</span>`; }).join("")}</div>
+    <div class="whats-colunas">${grupos.map(g => { const w = WHATS[g.id];
+      return `<div class="whats-col ${w.cor}">
+        <div class="whats-cab"><div><b>${w.icone} ${w.titulo}</b><span>${w.acao}</span></div><strong>${g.total}</strong></div>
+        ${g.lista.length ? `<ul>${g.lista.map(x => `<li>
+            <div class="whats-quem"><b>${esc(x.cliente)}</b><button class="whats-tel" data-tel="${esc(x.telefone)}" title="Copiar telefone">📋 ${esc(x.telefone)}</button></div>
+            <span class="whats-tempo ${nivelTempo(x.paradoDias)}" title="Tempo desde a última mensagem da conversa">⏱ ${tempoParado(x.paradoDias)}</span></li>`).join("")}</ul>
+          ${g.total > g.lista.length ? `<p class="des-sub">+ ${g.total - g.lista.length} no EvoTalks (mostrando os ${g.lista.length} que esperam há mais tempo)</p>` : ""}`
+        : `<p class="whats-vazio">Nenhum 👍</p>`}
+      </div>`; }).join("")}</div>
+    <p class="des-sub">⏱ = tempo desde a última mensagem da conversa (sua ou do cliente). Cor do tempo: <span class="whats-tempo t-novo">até 2 h</span> <span class="whats-tempo t-medio">até 1 dia</span> <span class="whats-tempo t-velho">1 a 3 dias</span> <span class="whats-tempo t-muito">mais de 3 dias</span>.
+      A lista se atualiza sozinha: o sistema confere o EvoTalks a cada 5 min e esta tela relê a cada 3 min. Respondeu o cliente? Ele sai da lista em até ~10 min.</p>
+  </section>`;
 }
 
 function selo(s) { return s ? `<span class="selo-faixa f-${s}">${s}</span>` : `<span class="selo-faixa f-0">—</span>`; }
@@ -741,12 +808,7 @@ function renderDesempenho() {
       </table></div>
       <p class="des-sub">Dias trabalhados = dias com ligação no discador ou com venda. Venda conta no dia em que foi PAGA.</p>
     </section>`;
-  const pend = atual && at.conversas && at.conversas.pendentes && at.conversas.pendentes.length ? `
-    <section class="des-cartao">
-      <div class="des-tit">Seus clientes no WhatsApp esperando ação <span class="des-sub">· EvoTalks</span></div>
-      <div class="tabela"><table><thead><tr><th>Situação</th><th>Cliente</th><th>Telefone</th><th class="n">Parado há</th></tr></thead><tbody>${
-        at.conversas.pendentes.map(x => `<tr><td>${esc(x.situacao)}</td><td>${esc(x.cliente)}</td><td>${esc(x.telefone)}</td><td class="n">${x.paradoDias < 1 ? Math.round(x.paradoDias * 24) + " h" : String(x.paradoDias).replace(".", ",") + " dias"}</td></tr>`).join("")}</tbody></table></div>
-    </section>` : "";
+  const pend = atual && at.conversas && at.conversas.grupos ? renderWhats(at.conversas.grupos, d.atualizadoEm) : "";
   el.innerHTML = `<div class="des ficha-anim">
     <div class="des-topo"><div><h2>Meu desempenho</h2><p class="des-sub">${esc(d.operador)} · vendas pagas, pela data do pagamento · atualizado ${d.atualizadoEm ? new Date(d.atualizadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—"}</p></div>
       <div class="com-abas" role="group" aria-label="Período">${d.periodos.map((x, i) => `<button data-des-aba="${i}" aria-pressed="${i === desAba}">${esc(x.rotulo)}</button>`).join("")}</div></div>
@@ -847,6 +909,7 @@ document.getElementById("busca").addEventListener("keydown", e => {
 });
 document.getElementById("ficha").addEventListener("click", e => {
   if (vista === "desempenho") {
+    const tel = e.target.closest("[data-tel]"); if (tel) { copiar(tel.dataset.tel, "Telefone copiado"); return; }
     const a = e.target.closest("[data-des-aba]"); if (a) { desAba = +a.dataset.desAba; diaAberto = null; renderDesempenho(); return; }
     const d = e.target.closest("[data-dia]"); if (d) { diaAberto = diaAberto === d.dataset.dia ? null : d.dataset.dia; renderDesempenho(); }
     return;

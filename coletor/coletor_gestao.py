@@ -141,7 +141,7 @@ def montar_conversas(abertas, semana, ops, agora):
                 p['paradas'] += 1
         p['listas'][s].append({
             'id': c['id'], 'cliente': (c.get('clientname') or '').strip() or '—', 'telefone': c.get('clientnumber') or '',
-            'fila': c.get('fk_queue'), 'inicio': (c.get('begintime') or '')[:16], 'paradoDias': round(parada, 1),
+            'fila': c.get('fk_queue'), 'inicio': (c.get('begintime') or '')[:16], 'paradoDias': round(parada, 3),
             'clienteEsperando': cli, 'motivo': ('cliente esperando há mais de 24 h' if cli else f'parada há {int(parada)} dias') if s == 'atencao' else '',
             'abriu': nome_de(c.get('initiatedby')) if c.get('initiatedby') else 'cliente',
             'primeiraResposta': nome_de(c.get('firstresponse_fk_user')) if c.get('firstresponse_fk_user') else '',
@@ -319,14 +319,13 @@ def para_consultor(g):
             item['ligacoes'] = {k: l[k] for k in ('atendidas', 'faladoSeg', 'tmaSeg', 'logadoSeg')}
         if c:
             ct = c['contagem']
-            item['conversas'] = {'abertas': c['abertas'], 'contagem': ct}
-            pend = []
-            for s, rot in (('semResposta', 'Sem nenhuma resposta'), ('retorno', 'Esperando a sua resposta'), ('atencao', 'Esperando há mais de 24 h'), ('followup', 'Fazer follow-up')):
-                for x in c['listas'].get(s, []):
-                    if s == 'atencao' and not x['clienteEsperando']:
-                        continue
-                    pend.append({'situacao': rot, 'cliente': x['cliente'], 'telefone': x['telefone'], 'paradoDias': x['paradoDias']})
-            item['conversas']['pendentes'] = pend[:40]
+            item['conversas'] = {'abertas': c['abertas'], 'contagem': ct, 'grupos': []}
+            # do mais urgente para o menos; dentro do grupo, quem espera há mais tempo vem primeiro
+            for gid, origem, total in (('semResposta', 'semResposta', ct['semResposta']), ('retorno', 'retorno', ct['retorno']),
+                                       ('janela', 'atencao', c['esperando24h']), ('followup', 'followup', ct['followup'])):
+                lista = [x for x in c['listas'].get(origem, []) if gid != 'janela' or x['clienteEsperando']]
+                item['conversas']['grupos'].append({'id': gid, 'total': total, 'lista': [
+                    {'cliente': x['cliente'], 'telefone': x['telefone'], 'paradoDias': x['paradoDias']} for x in lista[:20]]})
         out[n] = item
     return out
 
