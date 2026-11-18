@@ -24,6 +24,7 @@ LISTAS = ['operadores.csv', 'tabulacoes.csv', 'ajustes_vendas.csv', 'vendas_ganh
 ESTADO = ['vendas_mes.json', 'convenios.json', 'govoice_token.json']
 PAGINAS_TV = {'tv1.html': ('dados.enc', 'DADOS'), 'tv2.html': ('dados.enc', 'DADOS'),
               'tv-unidades.html': ('dados.enc', 'DADOS'), 'convenios.html': ('conv.enc', 'CONV')}
+SO_ONLINE = ('cripto.js', 'index.html', 'gestao.html')  # páginas que só existem na versão online (não vêm do dashboard-tv)
 COPIAR = ['tv.css', 'nosleep.min.js', 'logo_ufit.png',
           # sons da TV 2 (ranking gamificado, 16/11/2026)
           'som-venda.mp3', 'som-ultrapassagem.m4a', 'som-lider.m4a', 'som-m1.m4a', 'som-m2.m4a', 'som-m3.m4a', 'som-super-meta.mp3']
@@ -64,7 +65,7 @@ def trocar(txt, de, para, nome):
 def montar_site(k):
     site, orig = os.path.join(AQUI, 'site'), os.path.join(ORIGEM, 'site')
     for n in os.listdir(site):
-        if n not in ('cripto.js', 'index.html'):  # estes dois são só da versão online
+        if n not in SO_ONLINE:
             os.remove(os.path.join(site, n))
     for n in COPIAR:
         shutil.copy(os.path.join(orig, n), site)
@@ -95,9 +96,39 @@ def montar_site(k):
                               '<script type="text/plain" class="app">\nconst DADOS = window.BALCAO;\n')
     gravar(os.path.join(site, 'balcao.html'), h)
     gravar(os.path.join(site, '.nojekyll'), '')
+    montar_fichas(k)
 
 
-def empacotar(k, nomes, pasta_origem, saida):
+def montar_fichas(k):
+    """Fichas de desempenho (a tela preta ligacoes.html, sem mudar o visual) dentro do Painel da Gestão:
+    os dados (ligacoes-dados.js, com nomes de clientes) vão em fichas.enc, fechado com a chave da GESTÃO."""
+    orig, site = os.path.join(ORIGEM, 'site'), os.path.join(AQUI, 'site')
+    js = ler(os.path.join(orig, 'ligacoes-dados.js'))
+    m = re.search(r'window\.LIGACOES = (\{.*\});?\s*$', js, re.S)
+    if not m:
+        sys.exit('ERRO: não achei window.LIGACOES em ligacoes-dados.js')
+    with tempfile.TemporaryDirectory() as t:
+        p = os.path.join(t, 'fichas.json')
+        gravar(p, json.dumps(json.loads(m.group(1)), ensure_ascii=False))
+        cripto(k['gestao'], 'cifrar', p, os.path.join(site, 'fichas.enc'))
+    h = ler(os.path.join(orig, 'ligacoes.html'))
+    h = trocar(h, '\n<script>\nvar sel', '\n<script src="cripto.js" data-arquivo="fichas.enc" data-var="LIGACOES" data-sal="ufit-gestao" '
+                  'data-titulo="Painel da Gestão"></script>\n<script type="text/plain" class="app">\nvar sel', 'ligacoes.html')
+    h = trocar(h, 'atualizar(); setInterval(atualizar,60000);', 'desenhar();', 'ligacoes.html')
+    h = trocar(h, "'Ao vivo: GoVoice a cada 1 min'", "'Fichas: atualizadas quando um lote de ligações é avaliado'", 'ligacoes.html')
+    gravar(os.path.join(site, 'fichas.html'), h)
+
+
+def chaves_operadores():
+    """{consultor: chave} da senha de cada um (Minha comissão). Vai criptografado no config.enc, nunca aberto."""
+    p = os.path.join(CASA, 'ufit-operadores-senhas.json')
+    if not os.path.exists(p):
+        return {}
+    with open(p, encoding='utf-8') as f:
+        return {n: v['chave'] for n, v in json.load(f).items()}
+
+
+def empacotar(k, nomes, pasta_origem, saida, extras=None):
     with tempfile.TemporaryDirectory() as t:
         for n in nomes:
             p = os.path.join(pasta_origem, n)
@@ -105,6 +136,8 @@ def empacotar(k, nomes, pasta_origem, saida):
                 shutil.copy(p, t)
             else:
                 print('  (não existe, fica de fora:', n + ')')
+        for n, conteudo in (extras or {}).items():
+            gravar(os.path.join(t, n), json.dumps(conteudo, ensure_ascii=False))
         cripto(k, 'empacotar', t, os.path.join(AQUI, saida))
 
 
@@ -124,7 +157,11 @@ def proibidos():
     for n in ('evo-api-credentials.json', 'govoice-credentials.json'):
         c = json.loads(ler(os.path.join(CASA, n)))
         out |= {str(v) for v in list(c.values()) + list((c.get('headers') or {}).values()) if isinstance(v, str) and len(v) > 12 and 'http' not in v}
-    out |= set(chaves().values())
+    out |= {v for v in chaves().values() if isinstance(v, str)}
+    p = os.path.join(CASA, 'ufit-operadores-senhas.json')
+    if os.path.exists(p):
+        for v in json.loads(ler(p)).values():
+            out |= {v['senha'], v['chave'], v['senha'].replace('-', '')}
     return {x for x in out if x}
 
 
@@ -150,7 +187,7 @@ def main():
     sys.stdout.reconfigure(encoding='utf-8')
     k = chaves()
     montar_site(k)
-    empacotar(k['interna'], LISTAS, ORIGEM, 'config.enc')
+    empacotar(k['interna'], LISTAS, ORIGEM, 'config.enc', {'chaves_operadores.json': chaves_operadores()})
     if '--estado' in sys.argv:
         empacotar(k['interna'], ESTADO, os.path.join(CASA, 'ufit-tv-cache'), 'estado-inicial.enc')
     conferir()

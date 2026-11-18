@@ -11,6 +11,8 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import coletor_core  # noqa: E402
 import coletor_convenios  # noqa: E402
+import coletor_gestao  # noqa: E402
+import comissao_ops  # noqa: E402
 
 INTERVALO_CONVENIOS = 55 * 60
 
@@ -56,7 +58,40 @@ def main(saida):
     with open(os.path.join(saida, 'dados.json'), 'w', encoding='utf-8') as f:
         json.dump(dados, f, ensure_ascii=False)
     print('TVs ok —', coletor_core.resumo(dados), flush=True)
+    convenios(saida, guarda, cred_evo)
+    gestao_e_comissao(saida, guarda, cred_gv, dados, dp)
 
+
+def gestao_e_comissao(saida, guarda, cred_gv, dados, dp):
+    """Painel da Gestão (gestao.json → gestao.enc, senha da gestão) e "Minha comissão" de cada consultor
+    (ops/op-xxxx.json → .enc, cada um com a senha do consultor). Erro aqui nunca derruba as TVs."""
+    hoje = datetime.now(coletor_core.BRT).date()
+    os.makedirs(saida, exist_ok=True)
+    try:
+        g = coletor_gestao.coletar(coletor_core.GoVoice(cred_gv, guarda), guarda, (dp or {}).get('discador'))
+        g['vendas'] = {}
+        if dp:
+            for nome in g['operadores']:
+                c = comissao_ops.minha_comissao(dp, nome, hoje, dados['atualizadoEm'])
+                mes = c['periodos'][0]
+                g['vendas'][nome] = {'hoje': c['hoje'], 'mes': {k: mes.get(k) for k in ('vendas', 'comissao', 'diasTrabalhados', 'diasNaFaixa', 'projecao')}}
+        with open(os.path.join(saida, 'gestao.json'), 'w', encoding='utf-8') as f:
+            json.dump(g, f, ensure_ascii=False)
+        print('gestão ok —', len(g['avisos']), 'avisos', ('; ' + ' | '.join(g['erros'])) if g['erros'] else '', flush=True)
+    except Exception as e:
+        print('ERRO na gestão:', type(e).__name__, str(e)[:200], flush=True)
+    try:
+        p = os.path.join(coletor_core.PASTA, 'chaves_operadores.json')
+        if dp and os.path.exists(p):
+            with open(p, encoding='utf-8') as f:
+                chaves = json.load(f)
+            n = comissao_ops.gravar_todos(dp, chaves, os.path.join(saida, 'ops'), hoje, dados['atualizadoEm'])
+            print('minha comissão ok —', n, 'consultores', flush=True)
+    except Exception as e:
+        print('ERRO na comissão dos consultores:', type(e).__name__, str(e)[:200], flush=True)
+
+
+def convenios(saida, guarda, cred_evo):
     c = guarda.ler('conv_em') or {}
     if time.time() - c.get('em', 0) >= INTERVALO_CONVENIOS:
         try:

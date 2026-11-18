@@ -16,7 +16,8 @@ input { font: 700 30px 'Segoe UI', Arial, sans-serif; padding: 16px; border-radi
   color: var(--texto); text-align: center; letter-spacing: 2px; width: 100%; }
 button, a.tela { font: 800 26px 'Segoe UI', Arial, sans-serif; padding: 20px 28px; border-radius: 14px; border: 4px solid transparent;
   background: var(--amarelo); color: #100F0D; text-decoration: none; text-align: center; cursor: pointer; display: block; }
-a.tela { background: var(--caixa); color: var(--texto); border-color: #44423e; }
+a.tela, .tela.embreve { background: var(--caixa); color: var(--texto); border-color: #44423e; }
+.tela.embreve { font: 800 26px 'Segoe UI', Arial, sans-serif; padding: 20px 28px; border-radius: 14px; border: 4px dashed #44423e; color: var(--texto-2); text-align: center; display: block; cursor: default; }
 a.tela.ultima { border-color: var(--amarelo); }
 button:focus, a.tela:focus, input:focus { outline: none; border-color: #fff; box-shadow: 0 0 0 4px var(--amarelo); }
 .menu { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; width: min(900px, 100%); }
@@ -43,6 +44,8 @@ button:focus, a.tela:focus, input:focus { outline: none; border-color: #fff; box
     <a class="tela" href="tv-unidades.html">TV das unidades e planos</a>
     <a class="tela" href="balcao.html">Balcão</a>
     <a class="tela" href="convenios.html">Painel de convênios</a>
+    <a class="tela" href="gestao.html">Gestão do call center</a>
+    <span class="tela embreve" title="O simulador de treino ainda está sendo preparado">Treinamento · em breve</span>
   </div>
   <p id="contagem" style="margin-top:20px"></p>
   <p style="margin-top:8px"><button class="sair" id="sair" type="button">Esquecer a senha nesta TV</button></p>

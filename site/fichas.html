@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qualidade das Ligações</title>
+<!-- Tela da gestão: ao vivo (GoVoice, de dados.js, a cada 1 min) + qualidade (transcrições, de ligacoes-dados.js) -->
+<style>
+:root{--amarelo:#EEAE0E;--fundo:#0b0a09;--cartao:#1a1917;--cartao2:#23221f;--linha:#2e2d29;--texto:#f0efec;--texto2:#c3c2b7;--texto3:#8f8e86;
+--bom:#0ca30c;--medio:#fab219;--ruim:#d03b3b;--azul:#3987e5}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--fundo);color:var(--texto);font:15px/1.45 'Segoe UI',Arial,sans-serif;padding:20px 16px 40px}
+.wrap{max-width:1400px;margin:0 auto}
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+header img{height:40px}h1{font-size:24px;font-weight:800}h1 span{color:var(--amarelo)}
+.dir{margin-left:auto;color:var(--texto3);font-size:13px;text-align:right}
+.abas{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.abas button{background:var(--cartao);color:var(--texto2);border:1px solid var(--linha);border-radius:20px;padding:6px 14px;font:inherit;cursor:pointer}
+.abas button.on{background:var(--amarelo);color:#100f0d;border-color:var(--amarelo);font-weight:700}
+.grade{display:grid;gap:14px;grid-template-columns:repeat(12,1fr)}
+.c{background:var(--cartao);border:1px solid var(--linha);border-radius:12px;padding:14px 16px;min-width:0}
+.c h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--texto3);margin-bottom:10px;font-weight:700}
+.s12{grid-column:span 12}.s8{grid-column:span 8}.s6{grid-column:span 6}.s4{grid-column:span 4}
+@media(max-width:1000px){.s8,.s6,.s4{grid-column:span 12}}
+.kpis{display:flex;gap:10px;flex-wrap:wrap}.k{background:var(--cartao2);border-radius:10px;padding:10px 14px;min-width:120px;flex:1}
+.k b{display:block;font-size:26px;font-variant-numeric:tabular-nums}.k small{color:var(--texto3)}
+.vivo{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bom);margin-right:6px;animation:p 2s infinite}
+@keyframes p{50%{opacity:.3}}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:6px 6px;border-bottom:1px solid var(--linha);text-align:left;vertical-align:top}
+th{color:var(--texto3);font-weight:600;font-size:12px;text-transform:uppercase}.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.barra{height:10px;border-radius:5px;background:var(--cartao2);overflow:hidden;min-width:60px}.barra i{display:block;height:100%}
+.nota{display:inline-block;min-width:38px;text-align:center;border-radius:6px;padding:1px 6px;font-weight:700;color:#100f0d}
+.tag{display:inline-block;padding:1px 7px;border-radius:5px;background:var(--cartao2);color:var(--texto2);font-size:12px;margin-right:4px}
+.tag.ok{background:#0ca30c33;color:#7fe07f}.tag.no{background:#d03b3b33;color:#f19999}
+.sub{color:var(--texto3);font-size:13px}.vazio{color:var(--texto3);padding:20px 0}
+ul{padding-left:18px}li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="logo_ufit.png" alt="">
+    <h1>Qualidade das <span>ligações</span></h1>
+    <div class="dir" id="info"></div>
+  </header>
+  <div class="abas" id="abas"></div>
+  <div id="conteudo"></div>
+</div>
+<script src="cripto.js" data-arquivo="fichas.enc" data-var="LIGACOES" data-sal="ufit-gestao" data-titulo="Painel da Gestão"></script>
+<script type="text/plain" class="app">
+var sel = (location.hash.match(/v=([^&]+)/) || [])[1];
+sel = sel ? decodeURIComponent(sel) : null;
+function esc(t){return String(t==null?'—':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function cor(n){return n==null?'var(--texto3)':n>=7.5?'var(--bom)':n>=5?'var(--medio)':'var(--ruim)';}
+function nota(n){return '<span class="nota" style="background:'+cor(n)+'">'+(n==null?'—':n.toFixed(1))+'</span>';}
+function barra(n,max,c){return '<div class="barra"><i style="width:'+Math.round(100*(n||0)/(max||10))+'%;background:'+(c||cor(n))+'"></i></div>';}
+function mmss(s){return Math.floor(s/60)+'m'+String(s%60).padStart(2,'0');}
+var POS=['venda','pagou','negociando','agendou'];
+var CRIT=[['abertura','Abertura'],['sondagem','Sondagem'],['oferta','Oferta'],['objecoes','Objeções'],['fechamento','Fechamento'],['conexao','Conexão (adaptação)']];
+
+function carregar(src,depois){var s=document.createElement('script');s.src=src+'?t='+Date.now();s.onload=s.onerror=function(){s.remove();depois();};document.head.appendChild(s);}
+function atualizar(){carregar('dados.js',function(){carregar('ligacoes-dados.js',desenhar);});}
+
+function vivo(nome){
+  var D=window.DADOS; if(!D||!D.operadores) return '';
+  var o=D.operadores.find(function(x){return (x.govoice||'').toLowerCase()===nome.toLowerCase();}); if(!o) return '';
+  var st={ligacao:'Em ligação',livre:'Livre',pausa:'Em pausa',offline:'Desconectada'}[o.status]||o.status;
+  var vendas=o.vendasHoje?o.vendasHoje.qtd:'—';
+  return '<div class="c s12"><h2><span class="vivo"></span>Agora no GoVoice · hoje</h2><div class="kpis">'+
+    '<div class="k"><small>Situação</small><b style="font-size:20px">'+esc(st)+'</b></div>'+
+    '<div class="k"><small>Atendidas hoje</small><b>'+esc(o.atendidas)+'</b></div>'+
+    '<div class="k"><small>Tempo médio</small><b>'+mmss(o.tmaSeg||0)+'</b></div>'+
+    '<div class="k"><small>Vendas hoje (EVO)</small><b>'+esc(vendas)+'</b></div>'+
+    Object.keys(o.tabulacoes||{}).sort(function(a,b){return o.tabulacoes[b]-o.tabulacoes[a];}).slice(0,3).map(function(t){return '<div class="k"><small>'+esc(t)+'</small><b>'+o.tabulacoes[t]+'</b></div>';}).join('')+
+    '</div></div>';
+}
+
+function afinidade(lista,titulo){
+  if(!lista.length) return '';
+  var max=Math.max.apply(null,lista.map(function(u){return u.ligacoes;}));
+  return '<div class="c s6"><h2>'+titulo+'</h2><table><tr><th>Nome</th><th>Ligações</th><th class="n">Nota</th><th class="n">Conexão</th><th class="n">Positivas</th><th class="n">Vendas</th></tr>'+
+    lista.map(function(u){return '<tr><td>'+esc(u.nome)+'</td><td>'+barra(u.ligacoes,max,'var(--azul)')+'<span class="sub">'+u.ligacoes+'</span></td><td class="n">'+nota(u.nota)+'</td><td class="n">'+nota(u.conexao)+'</td><td class="n">'+u.positivas+'</td><td class="n">'+u.vendas+'</td></tr>';}).join('')+'</table></div>';
+}
+
+function desenhar(){
+  var L=window.LIGACOES, el=document.getElementById('conteudo');
+  document.getElementById('info').innerHTML='Fichas: atualizadas quando um lote de ligações é avaliado'+(window.DADOS&&DADOS.atualizadoEm?' ('+esc(DADOS.atualizadoEm.slice(11,16))+')':'')+'<br>Qualidade: transcrições de '+(L?esc(L.vendedores[0]?L.vendedores[0].periodo.join(' a '):'')+' · gerado '+esc(L.gerado):'— (ainda sem dados)');
+  if(!L||!L.vendedores.length){el.innerHTML='<div class="vazio">Sem transcrições ainda.</div>';return;}
+  var vs=L.vendedores.filter(function(v){return v.ligacoes.length;});
+  if(!sel||!vs.some(function(v){return v.vendedor===sel;})) sel=vs[0].vendedor;
+  document.getElementById('abas').innerHTML=vs.map(function(v){return '<button class="'+(v.vendedor===sel?'on':'')+'" onclick="sel=\''+esc(v.vendedor)+'\';location.hash=\'v=\'+encodeURIComponent(sel);desenhar()">'+esc(v.vendedor)+'</button>';}).join('');
+  var v=vs.find(function(x){return x.vendedor===sel;}), vo=v.volume;
+  var h='<div class="grade">'+vivo(v.vendedor);
+  h+='<div class="c s12"><h2>Período analisado · '+esc(v.periodo[0]===v.periodo[1]?v.periodo[0]:v.periodo.join(' a '))+'</h2><div class="kpis">'+
+    [['Atendidas',vo.atendidas],['Com 30 s ou mais',vo.mais30s],['Min de conversa',vo.minutos],['Avaliadas',vo.avaliadas],['Vendas no EVO',v.vendas_evo.length]].map(function(k){return '<div class="k"><small>'+k[0]+'</small><b>'+esc(k[1])+'</b></div>';}).join('')+
+    '<div class="k"><small>Nota média</small><b style="color:'+cor(v.nota)+'">'+(v.nota==null?'—':v.nota.toFixed(1))+'</b></div></div></div>';
+  h+='<div class="c s4"><h2>Notas por critério</h2><table>'+CRIT.map(function(c){var n=v.criterios[c[0]];return '<tr><td>'+c[1]+'</td><td style="width:45%">'+barra(n)+'</td><td class="n">'+nota(n)+'</td></tr>';}).join('')+'</table></div>';
+  h+='<div class="c s4"><h2>Pontos fortes</h2><ul>'+v.fortes.map(function(x){return '<li>'+esc(x[0])+' <span class="sub">('+x[1]+')</span></li>';}).join('')+'</ul><h2 style="margin-top:14px">O que melhorar</h2><ul>'+v.melhorar.map(function(x){return '<li>'+esc(x[0])+' <span class="sub">('+x[1]+')</span></li>';}).join('')+'</ul></div>';
+  h+='<div class="c s4"><h2>Objeções mais ouvidas</h2><table>'+v.objecoes.map(function(x){return '<tr><td>'+esc(x[0])+'</td><td class="n">'+x[1]+'</td></tr>';}).join('')+'</table><h2 style="margin-top:14px">Resultados</h2><div>'+v.resultados.map(function(x){return '<span class="tag '+(POS.indexOf(x[0])>=0?'ok':'')+'">'+esc(x[0])+' '+x[1]+'</span>';}).join('')+'</div></div>';
+  h+=afinidade(v.por_unidade,'Afinidade por unidade')+afinidade(v.por_tipo,'Afinidade por tipo de lead');
+  h+='<div class="c s12"><h2>Ligação por ligação</h2><table><tr><th>Hora</th><th>Cliente</th><th>Unidade / tipo</th><th class="n">Duração</th><th class="n">Nota</th><th>Resultado e resumo</th></tr>'+
+    v.ligacoes.slice().reverse().map(function(l){var r=l.resultado||'sem avaliação';return '<tr><td class="n">'+(v.periodo[0]!==v.periodo[1]?esc(l.dia.slice(8,10)+'/'+l.dia.slice(5,7))+' ':'')+esc(l.hora)+'</td><td>'+esc(l.cliente)+'</td><td>'+esc(l.unidade)+'<br><span class="sub">'+esc(l.tipo)+'</span></td><td class="n">'+mmss(l.seg)+'</td><td class="n">'+nota(l.nota_geral)+'</td><td><span class="tag '+(POS.indexOf(r)>=0||l.vendeu?'ok':(r==='sem_interesse'?'no':''))+'">'+esc(r)+'</span>'+(l.vendeu?'<span class="tag ok">vendeu no EVO</span>':'')+esc(l.resumo||'')+(l.destaque?'<br><span class="sub">“'+esc(l.destaque)+'”</span>':'')+'</td></tr>';}).join('')+'</table></div>';
+  el.innerHTML=h+'</div>';
+}
+desenhar();
+</script>
+</body>
+</html>

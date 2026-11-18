@@ -97,7 +97,7 @@
     var d = document.createElement('form'); d.id = 'ufit-senha';
     d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0b0a09;color:#f0efec;font:500 18px Segoe UI,Arial,sans-serif;' +
       'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center';
-    var t = document.createElement('h1'); t.textContent = 'Painel de convênios'; t.style.cssText = 'margin:0;font-size:32px';
+    var t = document.createElement('h1'); t.textContent = eu.getAttribute('data-titulo') || 'Painel de convênios'; t.style.cssText = 'margin:0;font-size:32px';
     var p = document.createElement('p'); p.textContent = msg || 'Digite a senha de acesso'; p.style.margin = '0';
     var i = document.createElement('input'); i.type = 'password'; i.autocomplete = 'off'; i.setAttribute('aria-label', 'Senha de acesso');
     i.style.cssText = 'width:min(340px,100%);padding:12px;font-size:20px;border-radius:8px;border:1px solid #666;background:#1b1917;color:#f0efec;text-align:center';
@@ -151,6 +151,20 @@
   // chaveBits = ArrayBuffer de 32 bytes. Devolve uma promessa com os dados; senha errada → erro OperationError.
   window.UFIT_LER_COM = function (arquivo, chaveBits) {
     return ler(arquivo, crypto.subtle.importKey('raw', chaveBits, 'AES-GCM', false, ['decrypt']));
+  };
+  // Painel da Gestão: outro arquivo com a MESMA senha da página (ex.: fichas.enc). Releitura do arquivo principal: arquivo = null.
+  window.UFIT_LER_MESMA = function (arquivo) { return ler(arquivo || ARQUIVO); };
+  // Minha comissão (Balcão): senha do consultor → chave (sal "ufit-op") → arquivo "op-<sha256 da chave>.enc" → dados dele.
+  window.UFIT_MINHA_COMISSAO = function (senha) {
+    var enc = new TextEncoder(), limpa = senha.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return crypto.subtle.importKey('raw', enc.encode(limpa), 'PBKDF2', false, ['deriveBits'])
+      .then(function (b) { return crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode('ufit-op'), iterations: 300000, hash: 'SHA-256' }, b, 256); })
+      .then(function (bits) {
+        return crypto.subtle.digest('SHA-256', bits).then(function (h) {
+          var hex = Array.prototype.map.call(new Uint8Array(h), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('').slice(0, 16);
+          return ler('op-' + hex + '.enc', crypto.subtle.importKey('raw', bits, 'AES-GCM', false, ['decrypt']));
+        });
+      });
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);

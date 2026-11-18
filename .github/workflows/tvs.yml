@@ -31,6 +31,7 @@ jobs:
       CHAVE_INTERNA: ${{ secrets.CHAVE_INTERNA }}
       CHAVE_DP: ${{ secrets.CHAVE_DP }}
       CHAVE_CONV: ${{ secrets.CHAVE_CONV }}
+      CHAVE_GESTAO: ${{ secrets.CHAVE_GESTAO }}
       UFIT_CONFIG: /tmp/ufit/config
       UFIT_ESTADO: /tmp/ufit/estado
       UFIT_CREDENCIAIS: /tmp/ufit/cred
@@ -62,6 +63,8 @@ jobs:
 
       - name: Coletar
         working-directory: coletor
+        env:
+          EVOTALKS_TOKEN: ${{ secrets.EVOTALKS_TOKEN }}   # Painel da Gestão (só consultas de leitura)
         run: python3 rodar_nuvem.py /tmp/ufit/saida
 
       - name: Montar o site (criptografado)
@@ -87,6 +90,18 @@ jobs:
                 break
               fi
             done
+          fi
+          # Painel da Gestão: só abre com a senha da gestão
+          if [ -n "$CHAVE_GESTAO" ] && [ -f /tmp/ufit/saida/gestao.json ]; then
+            node ferramentas/cripto.js cifrar CHAVE_GESTAO /tmp/ufit/saida/gestao.json public/gestao.enc
+          fi
+          # "Minha comissão" no Balcão: um arquivo por consultor, cada um fechado com a chave da senha dele
+          if [ -d /tmp/ufit/saida/ops ]; then
+            for j in /tmp/ufit/saida/ops/*.json; do
+              b=$(basename "$j" .json)
+              CHAVE_OP=$(cat "/tmp/ufit/saida/ops/$b.key") node ferramentas/cripto.js cifrar CHAVE_OP "$j" "public/$b.enc"
+            done
+            rm -rf /tmp/ufit/saida/ops
           fi
           node ferramentas/cripto.js empacotar CHAVE_INTERNA "$UFIT_ESTADO" public/estado.enc
           ls -la public
