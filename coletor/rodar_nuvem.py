@@ -35,6 +35,20 @@ def repetir(dados):
         novas.sort(key=lambda v: v['quando'], reverse=True)  # a TV comemora da mais antiga para a mais nova
         dados['ultimasVendas'] = novas + dados['ultimasVendas']
         print('repetindo', len(novas), 'venda(s)', flush=True)
+    # TV 2 nova (18/11/2026): pedidos de repetição vão em dados['repetir']; cada TV toca uma vez cada `chave`.
+    # id_venda = número da venda no EVO, ou "equipe" para o "Parabéns, equipe!".
+    rep = []
+    for l in linhas:
+        i, ate = (l.get('id_venda') or '').strip(), (l.get('ate') or '').strip()
+        if not i or not ate or datetime.fromisoformat(ate) <= agora:
+            continue
+        if i.lower() == 'equipe':
+            rep.append({'chave': 'equipe|' + ate, 'tipo': 'equipe'})
+        elif i in por_id:
+            rep.append({'chave': i + '|' + ate, 'tipo': 'venda', 'venda': por_id[i]})
+    if rep:
+        dados['repetir'] = rep
+        print('pedidos de repetição:', len(rep), flush=True)
 
 
 def main(saida):
