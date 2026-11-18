@@ -758,72 +758,46 @@ function renderWhats(grupos, atualizadoEm) {
 function selo(s) { return s ? `<span class="selo-faixa f-${s}">${s}</span>` : `<span class="selo-faixa f-0">—</span>`; }
 
 function renderDesempenho() {
+  // Pedido do comercial (18/11/2026): o consultor vê só QUANTIDADE de vendas, FATURAMENTO e as conversas.
+  // Comissão, faixas, metas e projeção ficam fora da tela dele (continuam no Painel da Gestão).
   const el = document.getElementById("ficha"), d = meusDados;
   if (!d) { el.innerHTML = `<div class="des"><div class="com-vazio">Carregando seus números…</div></div>`; return; }
-  const p = d.periodos[desAba] || d.periodos[0], h = d.hoje || {}, fx = d.regra.faixas, at = d.atendimento || {};
+  const p = d.periodos[desAba] || d.periodos[0], h = d.hoje || {}, at = d.atendimento || {};
   const atual = desAba === 0;
-  // trilho do dia: um bloco por venda até a Super Meta, com marcas nas faixas
-  const max = fx[fx.length - 1].minimo;
-  const blocos = Array.from({ length: max }, (_, i) => { const f = [...fx].reverse().find(x => i + 1 >= x.minimo);
-    const marca = fx.find(x => x.minimo === i + 1); return `<i class="${i < h.vendas ? "ok " + (f ? "f-" + f.sigla : "f-0") : ""}">${marca ? `<b>${marca.sigla}</b>` : ""}</i>`; }).join("");
-  const prox = h.proxima;
+  const hojeDia = (p.dias || []).find(x => x.dia === h.dia) || { vendas: h.vendas || 0, valor: 0 };
   const hoje = atual ? `
-    <section class="des-cartao des-hoje">
-      <div class="des-tit">Hoje · ${dataBR(h.dia)}</div>
-      <div class="des-hoje-grade">
-        <div><div class="des-num">${h.vendas} <small>venda${h.vendas === 1 ? "" : "s"}</small> ${selo(h.sigla)}</div>
-          <div class="des-sub">${h.sigla ? `${brl(h.porVenda)} por venda = <b>${brl(h.comissao)}</b> de comissão hoje` : "Ainda sem faixa: abaixo de " + fx[0].minimo + " vendas o dia não comissiona"}</div></div>
-        <div class="des-prox">${prox ? `Faltam <b>${prox.faltam} venda${prox.faltam > 1 ? "s" : ""}</b> para a <b>${prox.sigla}</b> (${prox.nome}). Chegando lá, o dia vale <b>${brl(prox.comissaoSeChegar)}</b>.` : "🏆 Super Meta batida hoje!"}</div>
-      </div>
-      <div class="des-trilho" aria-label="Vendas de hoje até a Super Meta">${blocos}</div>
-      ${at.ligacoes || at.conversas ? `<dl class="des-mini">
-        ${at.ligacoes ? `<div><dt>Ligações atendidas</dt><dd>${at.ligacoes.atendidas}</dd></div><div><dt>Tempo falando</dt><dd>${hm(at.ligacoes.faladoSeg)}</dd></div>` : ""}
-        ${at.conversas ? `<div><dt>Clientes esperando você</dt><dd>${(at.conversas.contagem.semResposta || 0) + (at.conversas.contagem.retorno || 0)}</dd></div><div><dt>Follow-up para fazer</dt><dd>${at.conversas.contagem.followup || 0}</dd></div>` : ""}
-      </dl>` : ""}
-    </section>` : "";
-  const mm = p.metaMes;
-  const metas = mm ? `
-    <section class="des-cartao">
-      <div class="des-tit">Metas do mês <span class="des-sub">· meta do dia × ${mm.diasUteis} dias úteis (seg a sáb)${atual ? ` · ${mm.diasUteisPassados} já passaram` : ""}</span></div>
-      <div class="des-metas">${mm.faixas.map(f => { const pct = Math.min(100, Math.round(100 * p.vendas / f.meta));
-        const noRitmo = !atual || p.vendas >= f.ateHoje;
-        return `<div class="des-meta"><div class="des-meta-top">${selo(f.sigla)} <b>${f.meta} vendas</b> no mês</div>
-          <div class="des-barra"><i class="f-${f.sigla}" style="width:${pct}%"></i></div>
-          <div class="des-sub">${p.vendas} de ${f.meta} (${pct}%)${atual && !p.fechado ? (noRitmo ? " · no ritmo ✅" : ` · para estar no ritmo hoje: ${f.ateHoje}`) : ""}</div></div>`; }).join("")}</div>
-    </section>` : "";
+    <div class="des-kpis">
+      <div class="des-cartao"><div class="des-tit">Vendas hoje · ${dataBR(h.dia)}</div><div class="des-num">${hojeDia.vendas}</div><div class="des-sub">vendas pagas hoje</div></div>
+      <div class="des-cartao"><div class="des-tit">Faturamento hoje</div><div class="des-num">${brl(hojeDia.valor || 0)}</div><div class="des-sub">soma das vendas pagas hoje</div></div>
+    </div>` : "";
   const dias = p.dias.slice().reverse();
   const vendasDoDia = dia => p.listaVendas.filter(v => v.quando.slice(0, 10) === dia);
   const tabela = `
     <section class="des-cartao">
-      <div class="des-tit">Relatório dia a dia <span class="des-sub">· clique no dia para ver as vendas</span></div>
+      <div class="des-tit">Vendas dia a dia <span class="des-sub">· clique no dia para ver as vendas</span></div>
       <div class="tabela"><table class="des-tabela">
-        <thead><tr><th>Dia</th><th class="n">Vendas</th><th>Faixa</th><th class="n">R$ por venda</th><th class="n">Comissão do dia</th><th class="n">Valor vendido</th></tr></thead>
+        <thead><tr><th>Dia</th><th class="n">Vendas</th><th class="n">Faturamento</th></tr></thead>
         <tbody>${dias.map(x => `<tr class="des-dia ${x.dia === diaAberto ? "aberto" : ""} ${x.dia === h.dia ? "hoje" : ""}" data-dia="${x.dia}" tabindex="0">
-            <td>${dataBR(x.dia).slice(0, 5)} <span class="des-sub">${semana(x.dia)}${x.dia === h.dia ? " · hoje" : ""}</span></td><td class="n">${x.vendas}</td><td>${selo(x.sigla)}</td>
-            <td class="n">${x.porVenda ? brl(x.porVenda) : "—"}</td><td class="n"><b>${x.comissao ? brl(x.comissao) : "—"}</b></td><td class="n">${x.valor ? brl(x.valor) : "—"}</td></tr>
-          ${x.dia === diaAberto ? `<tr class="des-detalhe"><td colspan="6">${vendasDoDia(x.dia).length ? `<table><tbody>${vendasDoDia(x.dia).map(v =>
+            <td>${dataBR(x.dia).slice(0, 5)} <span class="des-sub">${semana(x.dia)}${x.dia === h.dia ? " · hoje" : ""}</span></td><td class="n"><b>${x.vendas}</b></td><td class="n">${x.valor ? brl(x.valor) : "—"}</td></tr>
+          ${x.dia === diaAberto ? `<tr class="des-detalhe"><td colspan="3">${vendasDoDia(x.dia).length ? `<table><tbody>${vendasDoDia(x.dia).map(v =>
             `<tr><td>${v.quando.slice(11, 16)}</td><td>${esc(v.cliente)}</td><td>${esc(v.plano)}</td><td>${esc(v.unidade)}</td><td class="n">${brl(v.valor)}</td></tr>`).join("")}</tbody></table>` : `<div class="des-sub">Nenhuma venda paga neste dia.</div>`}</td></tr>` : ""}`).join("") ||
-          `<tr><td colspan="6" class="com-vazio">Nenhum dia trabalhado ainda.</td></tr>`}</tbody>
-        <tfoot><tr><td>Total</td><td class="n">${p.vendas}</td><td></td><td></td><td class="n"><b>${brl(p.comissao)}</b></td><td class="n">${brl(p.valorVendido)}</td></tr></tfoot>
+          `<tr><td colspan="3" class="com-vazio">Nenhum dia trabalhado ainda.</td></tr>`}</tbody>
+        <tfoot><tr><td>Total</td><td class="n">${p.vendas}</td><td class="n">${brl(p.valorVendido)}</td></tr></tfoot>
       </table></div>
-      <p class="des-sub">Dias trabalhados = dias com ligação no discador ou com venda. Venda conta no dia em que foi PAGA.</p>
+      <p class="des-sub">Venda conta no dia em que foi PAGA.</p>
     </section>`;
   const pend = atual && at.conversas && at.conversas.grupos ? renderWhats(at.conversas.grupos, d.atualizadoEm) : "";
   el.innerHTML = `<div class="des ficha-anim">
     <div class="des-topo"><div><h2>Meu desempenho</h2><p class="des-sub">${esc(d.operador)} · vendas pagas, pela data do pagamento · atualizado ${d.atualizadoEm ? new Date(d.atualizadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—"}</p></div>
       <div class="com-abas" role="group" aria-label="Período">${d.periodos.map((x, i) => `<button data-des-aba="${i}" aria-pressed="${i === desAba}">${esc(x.rotulo)}</button>`).join("")}</div></div>
     ${d.exemplo ? `<div class="com-previa">Prévia com números de exemplo.</div>` : ""}
+    ${pend}
     ${hoje}
     <div class="des-kpis">
-      <div class="des-cartao"><div class="des-tit">Vendas no mês</div><div class="des-num">${p.vendas}</div><div class="des-sub">${brl(p.valorVendido)} vendidos · ${p.diasTrabalhados} dias trabalhados</div></div>
-      <div class="des-cartao"><div class="des-tit">${p.fechado ? "Comissão do mês" : "Comissão até agora"}</div><div class="des-num">${brl(p.comissao)}</div>
-        <div class="des-sub">${fx.map(f => `${selo(f.sigla)} ${p.diasNaFaixa[f.sigla] || 0}d`).join(" ")}</div></div>
-      ${p.projecao ? `<div class="des-cartao"><div class="des-tit">Projeção do mês</div><div class="des-num">${brl(p.projecao.valor)}</div><div class="des-sub">${esc(p.projecao.texto)}</div></div>` : ""}
+      <div class="des-cartao"><div class="des-tit">Vendas no mês</div><div class="des-num">${p.vendas}</div><div class="des-sub">${p.diasTrabalhados} dias trabalhados</div></div>
+      <div class="des-cartao"><div class="des-tit">Faturamento no mês</div><div class="des-num">${brl(p.valorVendido)}</div><div class="des-sub">soma das vendas pagas no mês</div></div>
     </div>
-    ${metas}
     ${tabela}
-    ${pend}
-    <p class="des-sub">Regra: a faixa vale por dia. ${fx.map(f => `${f.sigla} = ${f.minimo}+ vendas no dia → ${brl(f.porVenda)} por venda`).join(" · ")}. Abaixo de ${fx[0].minimo} vendas no dia não comissiona. A faixa do dia vale para todas as vendas daquele dia.</p>
   </div>`;
 }
 

@@ -134,6 +134,17 @@ def minha_comissao(dp, nome, hoje=None, agora=None, atendimento=None):
             'atendimento': atendimento or {}}
 
 
+def para_balcao(c):
+    """O consultor vê só QUANTIDADE de vendas, FATURAMENTO e as conversas (pedido do comercial, 18/11/2026).
+    Comissão, faixas, metas e projeção saem do arquivo dele (ficam só no Painel da Gestão)."""
+    tira = ('comissao', 'porVenda', 'sigla', 'proxima', 'projecao', 'diasNaFaixa', 'metaMes')
+    limpa = lambda d: {k: v for k, v in d.items() if k not in tira}
+    out = {k: c[k] for k in ('operador', 'atualizadoEm', 'atendimento')}
+    out['hoje'] = limpa(c['hoje'])
+    out['periodos'] = [dict(limpa(p), dias=[limpa(x) for x in p['dias']]) for p in c['periodos']]
+    return out
+
+
 def gravar_todos(dp, chaves, pasta, hoje=None, agora=None, atendimento=None):
     """chaves = {nome do consultor: chave base64url}. Grava <pasta>/<arquivo>.json e <arquivo>.key (a chave, para o passo que criptografa)."""
     os.makedirs(pasta, exist_ok=True)
@@ -141,7 +152,7 @@ def gravar_todos(dp, chaves, pasta, hoje=None, agora=None, atendimento=None):
     for nome, chave in chaves.items():
         arq = nome_arquivo(chave)
         with open(os.path.join(pasta, arq + '.json'), 'w', encoding='utf-8') as f:
-            json.dump(minha_comissao(dp, nome, hoje, agora, (atendimento or {}).get(nome)), f, ensure_ascii=False)
+            json.dump(para_balcao(minha_comissao(dp, nome, hoje, agora, (atendimento or {}).get(nome))), f, ensure_ascii=False)
         with open(os.path.join(pasta, arq + '.key'), 'w', encoding='utf-8') as f:
             f.write(chave)
         feitos += 1
