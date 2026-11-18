@@ -67,6 +67,7 @@ def gestao_e_comissao(saida, guarda, cred_gv, dados, dp):
     (ops/op-xxxx.json → .enc, cada um com a senha do consultor). Erro aqui nunca derruba as TVs."""
     hoje = datetime.now(coletor_core.BRT).date()
     os.makedirs(saida, exist_ok=True)
+    atendimento = {}
     try:
         g = coletor_gestao.coletar(coletor_core.GoVoice(cred_gv, guarda), guarda, (dp or {}).get('discador'))
         g['vendas'] = {}
@@ -77,6 +78,7 @@ def gestao_e_comissao(saida, guarda, cred_gv, dados, dp):
                 g['vendas'][nome] = {'hoje': c['hoje'], 'mes': {k: mes.get(k) for k in ('vendas', 'comissao', 'diasTrabalhados', 'diasNaFaixa', 'projecao')}}
         with open(os.path.join(saida, 'gestao.json'), 'w', encoding='utf-8') as f:
             json.dump(g, f, ensure_ascii=False)
+        atendimento = coletor_gestao.para_consultor(g)
         print('gestão ok —', len(g['avisos']), 'avisos', ('; ' + ' | '.join(g['erros'])) if g['erros'] else '', flush=True)
     except Exception as e:
         print('ERRO na gestão:', type(e).__name__, str(e)[:200], flush=True)
@@ -85,7 +87,7 @@ def gestao_e_comissao(saida, guarda, cred_gv, dados, dp):
         if dp and os.path.exists(p):
             with open(p, encoding='utf-8') as f:
                 chaves = json.load(f)
-            n = comissao_ops.gravar_todos(dp, chaves, os.path.join(saida, 'ops'), hoje, dados['atualizadoEm'])
+            n = comissao_ops.gravar_todos(dp, chaves, os.path.join(saida, 'ops'), hoje, dados['atualizadoEm'], atendimento)
             print('minha comissão ok —', n, 'consultores', flush=True)
     except Exception as e:
         print('ERRO na comissão dos consultores:', type(e).__name__, str(e)[:200], flush=True)

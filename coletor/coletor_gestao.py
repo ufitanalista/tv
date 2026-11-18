@@ -306,6 +306,31 @@ def aviso(nivel, operador, titulo, detalhe, origem):
     return {'nivel': nivel, 'operador': operador, 'titulo': titulo, 'detalhe': detalhe, 'origem': origem}
 
 
+def para_consultor(g):
+    """O que cada consultor vê no Balcão sobre o próprio atendimento (sem nota, sem aviso, sem comparação com colegas):
+    ligações de hoje e as conversas dele que estão esperando ação, com a lista dos clientes."""
+    out = {}
+    lig = (g.get('ligacoes') or {}).get('hoje') or {}
+    conv = (g.get('conversas') or {}).get('porConsultor') or {}
+    for n in g.get('operadores', []):
+        l, c = lig.get(n), conv.get(n)
+        item = {}
+        if l:
+            item['ligacoes'] = {k: l[k] for k in ('atendidas', 'faladoSeg', 'tmaSeg', 'logadoSeg')}
+        if c:
+            ct = c['contagem']
+            item['conversas'] = {'abertas': c['abertas'], 'contagem': ct}
+            pend = []
+            for s, rot in (('semResposta', 'Sem nenhuma resposta'), ('retorno', 'Esperando a sua resposta'), ('atencao', 'Esperando há mais de 24 h'), ('followup', 'Fazer follow-up')):
+                for x in c['listas'].get(s, []):
+                    if s == 'atencao' and not x['clienteEsperando']:
+                        continue
+                    pend.append({'situacao': rot, 'cliente': x['cliente'], 'telefone': x['telefone'], 'paradoDias': x['paradoDias']})
+            item['conversas']['pendentes'] = pend[:40]
+        out[n] = item
+    return out
+
+
 # ------------------------------------------------------------------ junta tudo
 def coletar(gv, guarda, discador=None):
     agora_dt = datetime.now(cc.BRT)

@@ -88,7 +88,7 @@ def periodo(dp, nome, vendas, mes, hoje):
     dias = []
     for d in sorted(trabalhados):
         r = resumo_dia(len(por_dia.get(d, [])))
-        dias.append(dict(r, dia=d))
+        dias.append(dict(r, dia=d, valor=round(sum(v.get('valor') or 0 for v in por_dia.get(d, [])), 2)))
     comissao = sum(d['comissao'] for d in dias)
     na_faixa = {f[0]: sum(1 for d in dias if d['sigla'] == f[0]) for f in FAIXAS}
     p = {'rotulo': MESES[m - 1].capitalize() + ('' if fechado else ' (até hoje)'), 'mes': mes, 'fechado': fechado,
@@ -96,6 +96,13 @@ def periodo(dp, nome, vendas, mes, hoje):
          'dias': dias,
          'listaVendas': [{k: v.get(k) for k in ('quando', 'cliente', 'plano', 'unidade', 'valor')}
                          for v in sorted(do_mes, key=lambda x: x['quando'], reverse=True)]}
+    # meta do mês = meta do dia × dias úteis do mês (seg a sáb)
+    ini = date(a, m, 1)
+    uteis = _dias_uteis(ini, fim)
+    passados = _dias_uteis(ini, min(hoje, fim))
+    p['valorVendido'] = round(sum(v.get('valor') or 0 for v in do_mes), 2)
+    p['metaMes'] = {'diasUteis': uteis, 'diasUteisPassados': passados,
+                    'faixas': [{'sigla': s, 'nome': n, 'meta': mi * uteis, 'ateHoje': mi * passados} for s, n, mi, pv in FAIXAS]}
     if not fechado:
         faltam = _dias_uteis(hoje + timedelta(days=1), fim)
         por_dia_trab = comissao / len(dias) if dias else 0
@@ -109,7 +116,7 @@ def _brl(v):
     return 'R$ ' + f'{v:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
 
 
-def minha_comissao(dp, nome, hoje=None, agora=None):
+def minha_comissao(dp, nome, hoje=None, agora=None, atendimento=None):
     hoje = hoje or date.today()
     vendas = [v for v in dp.get('historicoVendas') or [] if v.get('operador') == nome]
     hoje_txt = hoje.isoformat()
@@ -123,17 +130,18 @@ def minha_comissao(dp, nome, hoje=None, agora=None):
     return {'operador': nome, 'atualizadoEm': agora or datetime.now().astimezone().isoformat(timespec='seconds'),
             'regra': {'texto': REGRA_TEXTO, 'faixas': [{'sigla': s, 'nome': n, 'minimo': mi, 'porVenda': pv} for s, n, mi, pv in FAIXAS]},
             'hoje': dict(r, dia=hoje_txt),
-            'periodos': [periodo(dp, nome, vendas, mes, hoje), periodo(dp, nome, vendas, pas, hoje)]}
+            'periodos': [periodo(dp, nome, vendas, mes, hoje), periodo(dp, nome, vendas, pas, hoje)],
+            'atendimento': atendimento or {}}
 
 
-def gravar_todos(dp, chaves, pasta, hoje=None, agora=None):
+def gravar_todos(dp, chaves, pasta, hoje=None, agora=None, atendimento=None):
     """chaves = {nome do consultor: chave base64url}. Grava <pasta>/<arquivo>.json e <arquivo>.key (a chave, para o passo que criptografa)."""
     os.makedirs(pasta, exist_ok=True)
     feitos = 0
     for nome, chave in chaves.items():
         arq = nome_arquivo(chave)
         with open(os.path.join(pasta, arq + '.json'), 'w', encoding='utf-8') as f:
-            json.dump(minha_comissao(dp, nome, hoje, agora), f, ensure_ascii=False)
+            json.dump(minha_comissao(dp, nome, hoje, agora, (atendimento or {}).get(nome)), f, ensure_ascii=False)
         with open(os.path.join(pasta, arq + '.key'), 'w', encoding='utf-8') as f:
             f.write(chave)
         feitos += 1

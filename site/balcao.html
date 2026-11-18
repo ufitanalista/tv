@@ -234,6 +234,51 @@ dialog.com .com-grande { grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
 @media (max-width: 640px) { dialog.com .com-grande { grid-template-columns: minmax(0, 1fr); } }
 .btn-treino { width: 100%; margin-top: 6px; border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 8px 12px; font: 600 14px var(--body); text-align: left; cursor: default; }
 @media (max-width: 640px) { .com-hoje { grid-template-columns: minmax(0, 1fr); } }
+/* login (online) e Meu desempenho */
+#passoNome:not([hidden]) { display: flex; flex-direction: column; gap: 22px; }
+.login { display: flex; flex-direction: column; gap: 14px; }
+.login input { font: 700 24px var(--body); padding: 14px; border-radius: 10px; border: 1px solid #3a3a40; background: #232328; color: var(--rail-ink); text-align: center; letter-spacing: 1px; }
+.login input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 35%, transparent); }
+.login .entrar { border: 0; border-radius: 10px; padding: 14px; font: 800 18px var(--body); background: var(--brand); color: var(--brand-ink); cursor: pointer; }
+.login .entrar:disabled { opacity: .6; cursor: wait; }
+.login .voltar { align-self: flex-start; border: 0; background: none; color: var(--rail-muted); font: 600 14px var(--body); cursor: pointer; padding: 0; }
+.login .erro-login { color: #ff8a80; min-height: 1.2em; font-weight: 600; }
+.login .dica { font-size: 13px; }
+.btn-com.ativo { background: var(--brand); color: var(--brand-ink); }
+.des { display: flex; flex-direction: column; gap: 16px; padding-bottom: 32px; }
+.des-topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.des-cartao { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; min-width: 0; }
+.des-tit { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.des-tit .des-sub { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.des-sub { font-size: 13px; color: var(--muted); }
+.des-num { font: 800 34px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.des-num small { font-size: 18px; font-weight: 600; }
+.des-hoje-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 24px; align-items: center; }
+.des-prox { font-size: 15px; }
+.des-trilho { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin: 14px 0 4px; }
+.des-trilho i { position: relative; height: 14px; border-radius: 4px; background: var(--line); }
+.des-trilho i b { position: absolute; right: 0; top: 16px; font: 800 11px var(--body); color: var(--muted); }
+.des-trilho i.ok.f-0 { background: color-mix(in srgb, var(--ink) 35%, transparent); }
+.des-trilho i.ok.f-M1, .des-barra i.f-M1 { background: #cd7f32; } .des-trilho i.ok.f-M2, .des-barra i.f-M2 { background: #a9a9a9; }
+.des-trilho i.ok.f-M3, .des-barra i.f-M3 { background: #e8b923; } .des-trilho i.ok.f-SM, .des-barra i.f-SM { background: #4fc3e8; }
+.des-mini { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 22px 0 0; }
+.des-mini div { background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+.des-mini dt { font-size: 12px; color: var(--muted); font-weight: 600; }
+.des-mini dd { margin: 2px 0 0; font: 800 22px var(--display); font-variant-numeric: tabular-nums; }
+.des-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.des-metas { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.des-meta-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.des-barra { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; margin-bottom: 4px; }
+.des-barra i { display: block; height: 100%; border-radius: 99px; }
+.des-tabela { min-width: 620px; }
+.des-tabela td.n, .des-tabela th.n, .des .tabela td.n, .des .tabela th.n { text-align: right; }
+.des-tabela tbody tr.des-dia { cursor: pointer; }
+.des-tabela tbody tr.des-dia:hover, .des-tabela tbody tr.des-dia.aberto { background: var(--brand-soft); }
+.des-tabela tr.hoje td:first-child { font-weight: 700; }
+.des-tabela tfoot td { font-weight: 700; border-top: 2px solid var(--line); }
+.des-detalhe > td { background: var(--bg); }
+.des-detalhe table { min-width: 0; font-size: 13px; }
+@media (max-width: 760px) { .des-hoje-grade { grid-template-columns: minmax(0, 1fr); } .des-mini { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* Minha comissão: botão no trilho + janela só com os números de quem está logado */
 .btn-com { width: 100%; border: 1px solid var(--brand); background: transparent; color: var(--brand); border-radius: 8px; padding: 8px 12px; font: 600 14px var(--body); cursor: pointer; text-align: left; }
 .btn-com:hover { background: var(--brand); color: var(--brand-ink); }
@@ -293,15 +338,22 @@ dialog.com .caixa-com { padding: 22px 24px 24px; display: flex; flex-direction: 
   <button class="btn fechar" id="fecharCartaz">Fechar</button>
   <img id="cartazImg" alt="">
 </dialog>
-<dialog id="comissao" class="com" aria-label="Minha comissão">
-  <button class="btn fechar" id="fecharComissao">Fechar</button>
-  <div class="caixa-com" id="comCorpo"></div>
-</dialog>
 <section id="entrada" class="entrada" aria-label="Quem está atendendo" hidden>
   <div class="caixa">
     <div class="marca"><b>U</b>FIT<small>Central de atendimento</small></div>
-    <div><h1>Quem está atendendo?</h1><p>Os links de checkout saem com a sua página de vendas, para a venda cair na sua comissão.</p></div>
-    <div class="pessoas" id="pessoas"></div>
+    <div id="passoNome"><div><h1>Quem está atendendo?</h1><p>Os links de checkout saem com a sua página de vendas, para a venda cair na sua comissão.</p></div>
+      <div class="pessoas" id="pessoas"></div></div>
+    <div id="passoSenha" hidden>
+      <form id="formLogin" class="login" autocomplete="off">
+        <button type="button" class="voltar" id="voltarPessoas">← Não sou eu</button>
+        <h1 id="nomeLogin"></h1>
+        <p>Digite a sua senha pessoal.</p>
+        <input id="senhaLogin" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" aria-label="Sua senha pessoal" autocomplete="off">
+        <button type="submit" id="btnLogin" class="entrar">Entrar</button>
+        <p id="erroLogin" class="erro-login" role="alert"></p>
+        <p class="dica">Tanto faz maiúscula, minúscula ou tracinho. A senha é só sua: não passe para ninguém.</p>
+      </form>
+    </div>
   </div>
 </section>
 <div id="toast" class="toast" role="status" hidden></div>
@@ -591,124 +643,150 @@ function renderFicha() {
   </div>`;
 }
 
-function render() { renderLista(); renderFicha(); renderLogado(); }
+function render() { renderLista(); if (vista === "desempenho") renderDesempenho(); else renderFicha(); renderLogado(); }
 
 function renderLogado() {
   const o = DADOS.operadores.find(x => x.chave === consultor);
   document.getElementById("logado").innerHTML = o
-    ? `<div><span>Atendendo</span><strong>${esc(o.nome)}</strong></div><button id="trocar">Trocar</button>`
+    ? `<div><span>${LOGIN ? "Logado" : "Atendendo"}</span><strong>${esc(o.nome)}</strong></div><button id="trocar">${LOGIN ? "Sair" : "Trocar"}</button>`
     : `<div><span>Atendendo</span><strong>Ninguém</strong></div><button id="trocar">Entrar</button>`;
-  document.getElementById("minhaCom").innerHTML = COMISSAO_ON && o
-    ? `<button class="btn-com" id="abrirComissao">💰 Minha comissão</button><button class="btn-treino" disabled title="O simulador de treino ainda está sendo preparado">🎯 Treinamento · em breve</button>` : "";
+  document.getElementById("minhaCom").innerHTML = DESEMPENHO_ON && o
+    ? `<button class="btn-com ${vista === "desempenho" ? "ativo" : ""}" id="abrirDesempenho">📊 Meu desempenho</button><button class="btn-treino" disabled title="O simulador de treino ainda está sendo preparado">🎯 Treinamento · em breve</button>` : "";
 }
 
-// ---------- Minha comissão ----------
-// Cada operador vê SÓ a própria comissão. Online (GitHub Pages): o consultor digita a SENHA DELE; a senha vira a chave que abre
-// o arquivo dele (cripto.js → UFIT_MINHA_COMISSAO). Quem não tem a senha não abre, nem sabe qual arquivo é de quem.
-// A senha não fica guardada: fechou a janela ou trocou de pessoa, pede de novo.
-// No portal UFit, o portal pode definir window.UFIT_COMISSAO_URL (rota que lê o operador da sessão) e a senha deixa de ser pedida.
+// ---------- Login e "Meu desempenho" ----------
+// Online (GitHub Pages): cada consultor entra com o NOME + a SENHA DELE. A senha vira a chave que abre o arquivo dele
+// (cripto.js → UFIT_MINHA_COMISSAO); o arquivo diz de quem é, e só entra se for da pessoa escolhida.
+// A sessão fica só nesta aba (sessionStorage): fechou o navegador ou clicou em Sair, pede de novo.
+// No PC (sem cripto.js) continua a escolha simples "Quem está atendendo?", sem desempenho.
 // Regra (18/11/2026): faixa POR DIA pelas vendas pagas no dia — M1 3 (R$ 2/venda) · M2 5 (R$ 5) · M3 7 (R$ 7) · SM 10 (R$ 10).
-const COMISSAO_URL = window.UFIT_COMISSAO_URL || "";
-const COMISSAO_ON = !!COMISSAO_URL || !!window.UFIT_MINHA_COMISSAO || location.hash === "#comissao";
-let comDados = null, comAba = 0, comPedindo = false;
+const LOGIN = !!window.UFIT_MINHA_COMISSAO;
+const DESEMPENHO_ON = LOGIN || location.hash === "#comissao";
+let vista = "unidade", meusDados = null, desAba = 0, diaAberto = null, escolhido = null;
+function sessao(v) {
+  try { if (v === undefined) return JSON.parse(sessionStorage.getItem("painel-sessao") || "null");
+        if (v === null) sessionStorage.removeItem("painel-sessao"); else sessionStorage.setItem("painel-sessao", JSON.stringify(v)); } catch (e) { return null; }
+}
+const SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+const semana = d => SEMANA[new Date(d + "T12:00:00").getDay()];
+const hm = s => { s = Math.round(s || 0); return s >= 3600 ? Math.floor(s / 3600) + "h" + String(Math.floor(s % 3600 / 60)).padStart(2, "0") : Math.floor(s / 60) + " min"; };
+const nomeIgual = (a, b) => norm(a).trim() === norm(b).trim();
 
 function comissaoExemplo(nome) {
   const h = new Date(), iso = d => d.toISOString().slice(0, 10);
   const faixas = [["M1", "Bronze", 3, 2], ["M2", "Prata", 5, 5], ["M3", "Ouro", 7, 7], ["SM", "Super Meta", 10, 10]].map(([sigla, n, minimo, porVenda]) => ({ sigla, nome: n, minimo, porVenda }));
   const fx = q => [...faixas].reverse().find(f => q >= f.minimo);
-  const dias = [2, 3, 5, 1, 4, 7, 3, 0, 6, 3].map((q, i) => { const f = fx(q); return { dia: iso(new Date(h.getFullYear(), h.getMonth(), i + 1)), vendas: q, sigla: f ? f.sigla : "", porVenda: f ? f.porVenda : 0, comissao: f ? q * f.porVenda : 0 }; });
+  const dias = [2, 3, 5, 1, 4, 7, 3, 0, 6, 3].map((q, i) => { const f = fx(q); return { dia: iso(new Date(h.getFullYear(), h.getMonth(), i + 1)), vendas: q, sigla: f ? f.sigla : "", porVenda: f ? f.porVenda : 0, comissao: f ? q * f.porVenda : 0, valor: q * 99.9 }; });
   const com = dias.reduce((s, d) => s + d.comissao, 0);
-  return { operador: nome, atualizadoEm: h.toISOString(), exemplo: true, regra: { texto: "Exemplo", faixas },
+  return { operador: nome, atualizadoEm: h.toISOString(), exemplo: true, regra: { faixas },
     hoje: { dia: iso(h), vendas: 4, sigla: "M1", porVenda: 2, comissao: 8, proxima: { sigla: "M2", nome: "Prata", minimo: 5, porVenda: 5, faltam: 1, comissaoSeChegar: 25 } },
-    periodos: [{ rotulo: "Este mês (até hoje)", fechado: false, vendas: 34, comissao: com, diasTrabalhados: 10, diasNaFaixa: { M1: 4, M2: 2, M3: 1, SM: 0 }, dias,
-      projecao: { valor: com * 2.4, texto: "Estimativa: mantendo a média por dia trabalhado nos dias úteis que faltam (seg a sáb)." },
+    atendimento: { ligacoes: { atendidas: 48, faladoSeg: 5400, tmaSeg: 110, logadoSeg: 14000 },
+      conversas: { abertas: 40, contagem: { semResposta: 1, retorno: 3, atencao: 6, followup: 4 }, pendentes: [{ situacao: "Esperando a sua resposta", cliente: "Cliente exemplo", telefone: "55479...", paradoDias: 0.3 }] } },
+    periodos: [{ rotulo: "Este mês (até hoje)", fechado: false, vendas: 34, valorVendido: 3396.6, comissao: com, diasTrabalhados: 10, diasNaFaixa: { M1: 4, M2: 2, M3: 1, SM: 0 }, dias,
+      metaMes: { diasUteis: 25, diasUteisPassados: 10, faixas: faixas.map(f => ({ sigla: f.sigla, nome: f.nome, meta: f.minimo * 25, ateHoje: f.minimo * 10 })) },
+      projecao: { valor: com * 2.4, texto: "Estimativa pela média por dia trabalhado." },
       listaVendas: [{ quando: iso(h) + "T10:00", cliente: "Cliente exemplo", plano: "PLANO FIT ANUAL", unidade: "Unidade exemplo", valor: 79.9 }] }] };
-}
-
-async function buscarComissao(senha) {
-  if (COMISSAO_URL) {
-    const r = await fetch(COMISSAO_URL, { credentials: "include", cache: "no-store" });
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return r.json();
-  }
-  if (window.UFIT_MINHA_COMISSAO) return window.UFIT_MINHA_COMISSAO(senha);
-  return comissaoExemplo((DADOS.operadores.find(x => x.chave === consultor) || {}).nome || "Operador");
 }
 
 function selo(s) { return s ? `<span class="selo-faixa f-${s}">${s}</span>` : `<span class="selo-faixa f-0">—</span>`; }
 
-function renderSenha(msg) {
-  const o = DADOS.operadores.find(x => x.chave === consultor) || {};
-  document.getElementById("comCorpo").innerHTML = `
-    <div class="com-topo"><div><h2>Minha comissão</h2><p>${esc(o.nome || "")} · digite a sua senha pessoal</p></div></div>
-    <form id="comSenha" class="com-senha" autocomplete="off">
-      <input id="comSenhaCampo" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" aria-label="Sua senha pessoal" autocomplete="off">
-      <button class="btn-com" type="submit" id="comEntrar">Ver minha comissão</button>
-      <p class="com-obs">${msg ? `<b>${esc(msg)}</b><br>` : ""}A senha é só sua e não fica guardada neste computador. Esqueceu? Peça para a gestão.</p>
-    </form>`;
-  setTimeout(() => { const c = document.getElementById("comSenhaCampo"); if (c) c.focus(); }, 30);
-}
-
-function renderComissao() {
-  const el = document.getElementById("comCorpo"), d = comDados;
-  if (!d) { el.innerHTML = `<div class="com-vazio">Carregando…</div>`; return; }
-  if (d.erro) { el.innerHTML = `<div class="com-topo"><h2>Minha comissão</h2></div><div class="com-previa">${esc(d.erro)}</div>`; return; }
-  const p = d.periodos[comAba] || d.periodos[0], h = d.hoje || {}, fx = d.regra.faixas;
+function renderDesempenho() {
+  const el = document.getElementById("ficha"), d = meusDados;
+  if (!d) { el.innerHTML = `<div class="des"><div class="com-vazio">Carregando seus números…</div></div>`; return; }
+  const p = d.periodos[desAba] || d.periodos[0], h = d.hoje || {}, fx = d.regra.faixas, at = d.atendimento || {};
+  const atual = desAba === 0;
+  // trilho do dia: um bloco por venda até a Super Meta, com marcas nas faixas
+  const max = fx[fx.length - 1].minimo;
+  const blocos = Array.from({ length: max }, (_, i) => { const f = [...fx].reverse().find(x => i + 1 >= x.minimo);
+    const marca = fx.find(x => x.minimo === i + 1); return `<i class="${i < h.vendas ? "ok " + (f ? "f-" + f.sigla : "f-0") : ""}">${marca ? `<b>${marca.sigla}</b>` : ""}</i>`; }).join("");
   const prox = h.proxima;
-  const hoje = comAba === 0 ? `
-    <div class="com-hoje">
-      <div><div class="rot">Hoje</div><div class="val">${h.vendas} venda${h.vendas === 1 ? "" : "s"} ${selo(h.sigla)}</div>
-        <div class="conta">${h.sigla ? `${brl(h.porVenda)} por venda = <b>${brl(h.comissao)}</b> hoje` : "Ainda sem faixa hoje"}</div></div>
-      <div class="com-prox">${prox
-        ? `Faltam <b>${prox.faltam} venda${prox.faltam > 1 ? "s" : ""}</b> para a <b>${prox.sigla}</b> (${prox.nome}): o dia passa a valer <b>${brl(prox.comissaoSeChegar)}</b> ou mais.
-           <div class="trilho">${fx.map(f => `<i class="${h.vendas >= f.minimo ? "ok f-" + f.sigla : ""}" title="${f.sigla}: ${f.minimo} vendas"></i>`).join("")}</div>`
-        : `🏆 Super Meta batida hoje!`}</div>
-    </div>` : "";
-  const proj = p.projecao ? `<div class="conta">Projeção do mês: <b>${brl(p.projecao.valor)}</b><br><small>${esc(p.projecao.texto)}</small></div>` : `<div class="conta">${p.vendas} vendas no mês</div>`;
-  el.innerHTML = `
-    <div class="com-topo"><div><h2>Minha comissão</h2><p>${esc(d.operador)} · vendas pagas, pela data do pagamento · atualizado ${d.atualizadoEm ? new Date(d.atualizadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—"}</p></div></div>
+  const hoje = atual ? `
+    <section class="des-cartao des-hoje">
+      <div class="des-tit">Hoje · ${dataBR(h.dia)}</div>
+      <div class="des-hoje-grade">
+        <div><div class="des-num">${h.vendas} <small>venda${h.vendas === 1 ? "" : "s"}</small> ${selo(h.sigla)}</div>
+          <div class="des-sub">${h.sigla ? `${brl(h.porVenda)} por venda = <b>${brl(h.comissao)}</b> de comissão hoje` : "Ainda sem faixa: abaixo de " + fx[0].minimo + " vendas o dia não comissiona"}</div></div>
+        <div class="des-prox">${prox ? `Faltam <b>${prox.faltam} venda${prox.faltam > 1 ? "s" : ""}</b> para a <b>${prox.sigla}</b> (${prox.nome}). Chegando lá, o dia vale <b>${brl(prox.comissaoSeChegar)}</b>.` : "🏆 Super Meta batida hoje!"}</div>
+      </div>
+      <div class="des-trilho" aria-label="Vendas de hoje até a Super Meta">${blocos}</div>
+      ${at.ligacoes || at.conversas ? `<dl class="des-mini">
+        ${at.ligacoes ? `<div><dt>Ligações atendidas</dt><dd>${at.ligacoes.atendidas}</dd></div><div><dt>Tempo falando</dt><dd>${hm(at.ligacoes.faladoSeg)}</dd></div>` : ""}
+        ${at.conversas ? `<div><dt>Clientes esperando você</dt><dd>${(at.conversas.contagem.semResposta || 0) + (at.conversas.contagem.retorno || 0)}</dd></div><div><dt>Follow-up para fazer</dt><dd>${at.conversas.contagem.followup || 0}</dd></div>` : ""}
+      </dl>` : ""}
+    </section>` : "";
+  const mm = p.metaMes;
+  const metas = mm ? `
+    <section class="des-cartao">
+      <div class="des-tit">Metas do mês <span class="des-sub">· meta do dia × ${mm.diasUteis} dias úteis (seg a sáb)${atual ? ` · ${mm.diasUteisPassados} já passaram` : ""}</span></div>
+      <div class="des-metas">${mm.faixas.map(f => { const pct = Math.min(100, Math.round(100 * p.vendas / f.meta));
+        const noRitmo = !atual || p.vendas >= f.ateHoje;
+        return `<div class="des-meta"><div class="des-meta-top">${selo(f.sigla)} <b>${f.meta} vendas</b> no mês</div>
+          <div class="des-barra"><i class="f-${f.sigla}" style="width:${pct}%"></i></div>
+          <div class="des-sub">${p.vendas} de ${f.meta} (${pct}%)${atual && !p.fechado ? (noRitmo ? " · no ritmo ✅" : ` · para estar no ritmo hoje: ${f.ateHoje}`) : ""}</div></div>`; }).join("")}</div>
+    </section>` : "";
+  const dias = p.dias.slice().reverse();
+  const vendasDoDia = dia => p.listaVendas.filter(v => v.quando.slice(0, 10) === dia);
+  const tabela = `
+    <section class="des-cartao">
+      <div class="des-tit">Relatório dia a dia <span class="des-sub">· clique no dia para ver as vendas</span></div>
+      <div class="tabela"><table class="des-tabela">
+        <thead><tr><th>Dia</th><th class="n">Vendas</th><th>Faixa</th><th class="n">R$ por venda</th><th class="n">Comissão do dia</th><th class="n">Valor vendido</th></tr></thead>
+        <tbody>${dias.map(x => `<tr class="des-dia ${x.dia === diaAberto ? "aberto" : ""} ${x.dia === h.dia ? "hoje" : ""}" data-dia="${x.dia}" tabindex="0">
+            <td>${dataBR(x.dia).slice(0, 5)} <span class="des-sub">${semana(x.dia)}${x.dia === h.dia ? " · hoje" : ""}</span></td><td class="n">${x.vendas}</td><td>${selo(x.sigla)}</td>
+            <td class="n">${x.porVenda ? brl(x.porVenda) : "—"}</td><td class="n"><b>${x.comissao ? brl(x.comissao) : "—"}</b></td><td class="n">${x.valor ? brl(x.valor) : "—"}</td></tr>
+          ${x.dia === diaAberto ? `<tr class="des-detalhe"><td colspan="6">${vendasDoDia(x.dia).length ? `<table><tbody>${vendasDoDia(x.dia).map(v =>
+            `<tr><td>${v.quando.slice(11, 16)}</td><td>${esc(v.cliente)}</td><td>${esc(v.plano)}</td><td>${esc(v.unidade)}</td><td class="n">${brl(v.valor)}</td></tr>`).join("")}</tbody></table>` : `<div class="des-sub">Nenhuma venda paga neste dia.</div>`}</td></tr>` : ""}`).join("") ||
+          `<tr><td colspan="6" class="com-vazio">Nenhum dia trabalhado ainda.</td></tr>`}</tbody>
+        <tfoot><tr><td>Total</td><td class="n">${p.vendas}</td><td></td><td></td><td class="n"><b>${brl(p.comissao)}</b></td><td class="n">${brl(p.valorVendido)}</td></tr></tfoot>
+      </table></div>
+      <p class="des-sub">Dias trabalhados = dias com ligação no discador ou com venda. Venda conta no dia em que foi PAGA.</p>
+    </section>`;
+  const pend = atual && at.conversas && at.conversas.pendentes && at.conversas.pendentes.length ? `
+    <section class="des-cartao">
+      <div class="des-tit">Seus clientes no WhatsApp esperando ação <span class="des-sub">· EvoTalks</span></div>
+      <div class="tabela"><table><thead><tr><th>Situação</th><th>Cliente</th><th>Telefone</th><th class="n">Parado há</th></tr></thead><tbody>${
+        at.conversas.pendentes.map(x => `<tr><td>${esc(x.situacao)}</td><td>${esc(x.cliente)}</td><td>${esc(x.telefone)}</td><td class="n">${x.paradoDias < 1 ? Math.round(x.paradoDias * 24) + " h" : String(x.paradoDias).replace(".", ",") + " dias"}</td></tr>`).join("")}</tbody></table></div>
+    </section>` : "";
+  el.innerHTML = `<div class="des ficha-anim">
+    <div class="des-topo"><div><h2>Meu desempenho</h2><p class="des-sub">${esc(d.operador)} · vendas pagas, pela data do pagamento · atualizado ${d.atualizadoEm ? new Date(d.atualizadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—"}</p></div>
+      <div class="com-abas" role="group" aria-label="Período">${d.periodos.map((x, i) => `<button data-des-aba="${i}" aria-pressed="${i === desAba}">${esc(x.rotulo)}</button>`).join("")}</div></div>
     ${d.exemplo ? `<div class="com-previa">Prévia com números de exemplo.</div>` : ""}
-    <div class="com-abas" role="group" aria-label="Período">${d.periodos.map((x, i) => `<button data-com-aba="${i}" aria-pressed="${i === comAba}">${esc(x.rotulo)}</button>`).join("")}</div>
     ${hoje}
-    <div class="com-grande"><div><div class="rot">${p.fechado ? "Comissão do mês" : "Comissão até agora"}</div><div class="val">${brl(p.comissao)}</div></div>${proj}</div>
-    <div class="com-faixas" aria-label="Faixas">${fx.map(f => `<span class="${h.sigla === f.sigla && comAba === 0 ? "atual" : ""}">${selo(f.sigla)} <b>${brl(f.porVenda)}/venda</b>${f.minimo}+ vendas no dia · ${p.diasNaFaixa[f.sigla] || 0} dia${(p.diasNaFaixa[f.sigla] || 0) === 1 ? "" : "s"} no mês</span>`).join("")}</div>
-    <p class="com-obs">A faixa vale por dia: no dia em que você bate a M2, todas as vendas daquele dia valem ${brl((fx[1] || {}).porVenda)}. Abaixo de ${fx[0].minimo} vendas no dia não comissiona.${p.fechado ? "" : " O mês ainda está aberto: o valor pode mudar até o último dia."}</p>
-    <div class="com-vendas"><table><thead><tr><th>Dia</th><th class="n">Vendas</th><th>Faixa</th><th class="n">Comissão</th></tr></thead><tbody>${
-      p.dias.slice().reverse().map(x => `<tr><td>${dataBR(x.dia)}</td><td class="n">${x.vendas}</td><td>${selo(x.sigla)}</td><td class="n">${x.comissao ? brl(x.comissao) : "—"}</td></tr>`).join("") ||
-      `<tr><td colspan="4" class="com-vazio">Nenhum dia trabalhado ainda.</td></tr>`}</tbody></table></div>
-    <div class="com-vendas">${p.listaVendas.length ? `<table><thead><tr><th>Pagamento</th><th>Cliente</th><th>Plano</th><th>Unidade</th><th class="n">Valor</th></tr></thead><tbody>${
-      p.listaVendas.map(v => `<tr><td>${dataBR(v.quando.slice(0, 10))} ${v.quando.slice(11, 16)}</td><td>${esc(v.cliente)}</td><td>${esc(v.plano)}</td><td>${esc(v.unidade)}</td><td class="n">${brl(v.valor)}</td></tr>`).join("")
-    }</tbody></table>` : `<div class="com-vazio">Nenhuma venda paga neste período.</div>`}</div>`;
+    <div class="des-kpis">
+      <div class="des-cartao"><div class="des-tit">Vendas no mês</div><div class="des-num">${p.vendas}</div><div class="des-sub">${brl(p.valorVendido)} vendidos · ${p.diasTrabalhados} dias trabalhados</div></div>
+      <div class="des-cartao"><div class="des-tit">${p.fechado ? "Comissão do mês" : "Comissão até agora"}</div><div class="des-num">${brl(p.comissao)}</div>
+        <div class="des-sub">${fx.map(f => `${selo(f.sigla)} ${p.diasNaFaixa[f.sigla] || 0}d`).join(" ")}</div></div>
+      ${p.projecao ? `<div class="des-cartao"><div class="des-tit">Projeção do mês</div><div class="des-num">${brl(p.projecao.valor)}</div><div class="des-sub">${esc(p.projecao.texto)}</div></div>` : ""}
+    </div>
+    ${metas}
+    ${tabela}
+    ${pend}
+    <p class="des-sub">Regra: a faixa vale por dia. ${fx.map(f => `${f.sigla} = ${f.minimo}+ vendas no dia → ${brl(f.porVenda)} por venda`).join(" · ")}. Abaixo de ${fx[0].minimo} vendas no dia não comissiona. A faixa do dia vale para todas as vendas daquele dia.</p>
+  </div>`;
 }
 
-async function carregarComissao(senha) {
-  comDados = null; renderComissao();
-  try { comDados = await buscarComissao(senha); renderComissao(); }
-  catch (e) { comDados = null; renderSenha(window.UFIT_MINHA_COMISSAO && !COMISSAO_URL ? "Senha errada (ou seus números ainda não foram gerados). Confira e tente de novo." : "Não consegui buscar a sua comissão agora. Tente de novo em 1 minuto."); }
+async function carregarMeus() {
+  const s = sessao();
+  if (!LOGIN) { meusDados = comissaoExemplo((DADOS.operadores.find(x => x.chave === consultor) || {}).nome || "Operador"); return; }
+  if (!s) return;
+  try { const d = await window.UFIT_MINHA_COMISSAO(s.senha); if (d && nomeIgual(d.operador, (DADOS.operadores.find(x => x.chave === s.chave) || {}).nome)) meusDados = d; }
+  catch (e) {}
 }
+// os números chegam a cada ~5 min: relê a cada 3 min enquanto estiver logado
+setInterval(async () => { if (LOGIN && sessao()) { await carregarMeus(); if (vista === "desempenho") renderDesempenho(); } }, 180000);
 
-function abrirComissao() {
-  comDados = null; comAba = 0;
-  document.getElementById("comissao").showModal();
-  if (window.UFIT_MINHA_COMISSAO && !COMISSAO_URL) renderSenha(); else carregarComissao();
-}
-document.getElementById("comCorpo").addEventListener("submit", e => {
-  if (e.target.id !== "comSenha") return;
-  e.preventDefault();
-  const s = document.getElementById("comSenhaCampo").value;
-  if (s.replace(/[^a-z0-9]/gi, "").length < 8) { renderSenha("Digite a senha completa."); return; }
-  carregarComissao(s);
+function sair() { sessao(null); meusDados = null; consultor = ""; vista = "unidade"; diaAberto = null; render(); abrirEntrada(); }
+
+document.getElementById("minhaCom").addEventListener("click", async e => {
+  if (e.target.id !== "abrirDesempenho") return;
+  vista = "desempenho"; desAba = 0; diaAberto = null; render(); window.scrollTo(0, 0);
+  if (!meusDados) { await carregarMeus(); if (vista === "desempenho") renderDesempenho(); }
 });
-// fechou a janela: esquece os números (o próximo a usar o computador não vê)
-document.getElementById("comissao").addEventListener("close", () => { comDados = null; document.getElementById("comCorpo").innerHTML = ""; });
-document.getElementById("minhaCom").addEventListener("click", e => { if (e.target.id === "abrirComissao") abrirComissao(); });
-document.getElementById("comCorpo").addEventListener("click", e => {
-  const b = e.target.closest("[data-com-aba]"); if (b) { comAba = +b.dataset.comAba; renderComissao(); }
-});
-document.getElementById("fecharComissao").addEventListener("click", () => document.getElementById("comissao").close());
-document.getElementById("comissao").addEventListener("click", e => { if (e.target.id === "comissao") e.target.close(); });
 
 function abrirEntrada() {
+  escolhido = null;
+  document.getElementById("passoSenha").hidden = true;
+  document.getElementById("passoNome").hidden = false;
   document.getElementById("pessoas").innerHTML = DADOS.operadores.map(o =>
     `<button class="pessoa ${o.chave === consultor ? "atual" : ""}" data-pessoa="${o.chave}">${esc(o.nome)}</button>`).join("");
   document.getElementById("entrada").hidden = false;
@@ -716,17 +794,47 @@ function abrirEntrada() {
   if (b) b.focus();
 }
 
-document.getElementById("pessoas").addEventListener("click", e => {
-  const b = e.target.closest("[data-pessoa]"); if (!b) return;
-  consultor = b.dataset.pessoa; guardar("painel-consultor", consultor);
+function entrar(chave) {
+  consultor = chave; guardar("painel-consultor", consultor);
   document.getElementById("entrada").hidden = true;
   render();
+}
+
+document.getElementById("pessoas").addEventListener("click", e => {
+  const b = e.target.closest("[data-pessoa]"); if (!b) return;
+  if (!LOGIN) { entrar(b.dataset.pessoa); return; }
+  escolhido = b.dataset.pessoa;
+  const o = DADOS.operadores.find(x => x.chave === escolhido);
+  document.getElementById("nomeLogin").textContent = o ? o.nome : "";
+  document.getElementById("erroLogin").textContent = "";
+  document.getElementById("senhaLogin").value = "";
+  document.getElementById("passoNome").hidden = true;
+  document.getElementById("passoSenha").hidden = false;
+  document.getElementById("senhaLogin").focus();
 });
-document.getElementById("logado").addEventListener("click", e => { if (e.target.id === "trocar") abrirEntrada(); });
+document.getElementById("voltarPessoas").addEventListener("click", abrirEntrada);
+document.getElementById("formLogin").addEventListener("submit", async e => {
+  e.preventDefault();
+  const senha = document.getElementById("senhaLogin").value, erro = document.getElementById("erroLogin"), btn = document.getElementById("btnLogin");
+  const o = DADOS.operadores.find(x => x.chave === escolhido);
+  if (senha.replace(/[^a-z0-9]/gi, "").length < 8) { erro.textContent = "Digite a senha completa."; return; }
+  btn.disabled = true; btn.textContent = "Entrando…"; erro.textContent = "";
+  try {
+    const d = await window.UFIT_MINHA_COMISSAO(senha);
+    if (!d || !o || !nomeIgual(d.operador, o.nome)) throw new Error("outra pessoa");
+    sessao({ chave: escolhido, senha }); meusDados = d; entrar(escolhido);
+  } catch (err) {
+    erro.textContent = "Senha errada para " + (o ? o.nome : "esta pessoa") + ". Confira e tente de novo. Esqueceu? Peça para a gestão.";
+    document.getElementById("senhaLogin").select();
+  }
+  btn.disabled = false; btn.textContent = "Entrar";
+});
+document.getElementById("logado").addEventListener("click", e => { if (e.target.id === "trocar") { if (LOGIN) sair(); else abrirEntrada(); } });
+
 
 document.getElementById("lista").addEventListener("click", e => {
   const b = e.target.closest(".uni"); if (!b) return;
-  atual = b.dataset.slug; guardar("painel-unidade", atual);
+  atual = b.dataset.slug; guardar("painel-unidade", atual); vista = "unidade";
   const q = norm(document.getElementById("busca").value.trim());
   const u = DADOS.unidades.find(x => x.slug === atual);
   const m = q && modalidades(u).find(x => norm(x).includes(q));
@@ -738,6 +846,11 @@ document.getElementById("busca").addEventListener("keydown", e => {
   if (e.key === "Enter") { const b = document.querySelector(".uni"); if (b) b.click(); }
 });
 document.getElementById("ficha").addEventListener("click", e => {
+  if (vista === "desempenho") {
+    const a = e.target.closest("[data-des-aba]"); if (a) { desAba = +a.dataset.desAba; diaAberto = null; renderDesempenho(); return; }
+    const d = e.target.closest("[data-dia]"); if (d) { diaAberto = diaAberto === d.dataset.dia ? null : d.dataset.dia; renderDesempenho(); }
+    return;
+  }
   const u = DADOS.unidades.find(x => x.slug === atual);
   const c = e.target.closest("[data-copiar]");
   if (c) { copiar(resumo(u, u.planos.find(p => p.chave === c.dataset.copiar)), "Resumo copiado"); return; }
@@ -762,6 +875,8 @@ document.addEventListener("keydown", e => {
   if (e.key === "/" && document.activeElement.tagName !== "INPUT") { e.preventDefault(); document.getElementById("busca").focus(); }
 });
 document.getElementById("rodape").innerHTML = `${DADOS.unidades.length} unidades no painel<br>Valores do EVO: ${DADOS.geradoEm}<br>Atalho: tecle / para buscar`;
+// online: só entra com login (a sessão vale enquanto a aba estiver aberta)
+if (LOGIN) { const s = sessao(); consultor = s && DADOS.operadores.some(o => o.chave === s.chave) ? s.chave : ""; if (s) carregarMeus(); }
 render();
 if (!consultor) abrirEntrada();
 </script>
