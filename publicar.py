@@ -24,7 +24,7 @@ LISTAS = ['operadores.csv', 'tabulacoes.csv', 'ajustes_vendas.csv', 'vendas_ganh
 ESTADO = ['vendas_mes.json', 'convenios.json', 'govoice_token.json']
 PAGINAS_TV = {'tv1.html': ('dados.enc', 'DADOS'), 'tv2.html': ('dados.enc', 'DADOS'),
               'tv-unidades.html': ('dados.enc', 'DADOS'), 'convenios.html': ('conv.enc', 'CONV')}
-SO_ONLINE = ('cripto.js', 'index.html', 'gestao.html')  # páginas que só existem na versão online (não vêm do dashboard-tv)
+SO_ONLINE = ('cripto.js', 'index.html', 'gestao.html', 'vendas.html')  # páginas que só existem na versão online (não vêm do dashboard-tv)
 COPIAR = ['tv.css', 'nosleep.min.js', 'logo_ufit.png',
           # sons da TV 2 (ranking gamificado, 16/11/2026)
           'som-venda.mp3', 'som-ultrapassagem.m4a', 'som-lider.m4a', 'som-m1.m4a', 'som-m2.m4a', 'som-m3.m4a', 'som-super-meta.mp3']

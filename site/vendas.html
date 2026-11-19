@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Vendas</title>
+<!-- Painel de Vendas do financeiro (só versão online). Dados em fin.enc (coletor/coletor_financeiro.py, a cada hora),
+     que só abre com a senha do financeiro (sal "ufit-fin"). Regras em "Como ler os números" e no coletor. -->
+<style>
+:root{--fundo:#f7f6f3;--cartao:#fff;--linha:#e6e4de;--texto:#1d1c1a;--texto2:#55534e;--texto3:#8a8780;--azul:#2a7de1;--azul2:#cfe2fa;
+--cinza:#c9c7c1;--trilho:#ecebe7;--bom:#1a7f37;--ruim:#b42318;--escuro:#1d1c1a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--fundo);color:var(--texto);font:15px/1.45 'Segoe UI',system-ui,Arial,sans-serif;padding:24px 16px 56px}
+.wrap{max-width:1200px;margin:0 auto}
+.sobre{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--texto3);margin-bottom:6px}
+h1{font:400 30px/1.2 Georgia,'Times New Roman',serif;margin-bottom:8px}
+.frase{font-size:16px;max-width:680px;margin-bottom:6px}.frase b{font-weight:700}
+.atual{color:var(--texto3);font-size:13px;margin-bottom:18px}
+.abas{display:flex;gap:24px;border-bottom:1px solid var(--linha);margin-bottom:18px}
+.abas button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 0;font:inherit;color:var(--texto3);cursor:pointer}
+.abas button[aria-selected=true]{color:var(--texto);border-bottom-color:var(--azul);font-weight:600}
+.filtros{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-end;padding-bottom:16px;border-bottom:1px solid var(--linha);margin-bottom:20px;
+position:sticky;top:0;background:var(--fundo);z-index:5;padding-top:8px}
+.f label{display:block;font-size:12.5px;color:var(--texto3);margin-bottom:5px}
+.seg{display:inline-flex;border:1px solid var(--linha);border-radius:8px;overflow:hidden;background:var(--cartao)}
+.seg button{border:0;background:none;padding:7px 13px;font:inherit;font-size:14px;color:var(--texto3);cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--escuro);color:#fff}
+select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--linha);border-radius:8px;background:var(--cartao);color:var(--texto);min-width:200px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:28px}
+.k{background:var(--cartao);border:1px solid var(--linha);border-radius:10px;padding:16px;display:flex;flex-direction:column}
+.k.proj{border:1px dashed var(--azul)}
+.k h3{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--texto3);font-weight:500;margin-bottom:8px}
+.k .v{font:400 30px/1.15 Georgia,serif;font-variant-numeric:tabular-nums;margin-bottom:6px}
+.k .d{font-size:13px;color:var(--texto3)}.k p{font-size:13px;color:var(--texto3);margin-top:auto;padding-top:14px}
+.sobe{color:var(--bom)}.desce{color:var(--ruim)}
+.grade{display:grid;grid-template-columns:3fr 2fr;gap:36px;margin-bottom:32px}
+section{margin-bottom:34px;min-width:0}
+h2{font-size:17px;font-weight:600;margin-bottom:6px}
+.exp{color:var(--texto3);font-size:13px;max-width:640px;margin-bottom:14px}
+.mix .item{margin-bottom:14px}.mix .top{display:flex;justify-content:space-between;gap:10px}
+.barra{height:9px;background:var(--trilho);border-radius:5px;margin:5px 0 4px;overflow:hidden}.barra i{display:block;height:100%;background:var(--azul);border-radius:5px}
+.mix .sub{font-size:12.5px;color:var(--texto3)}
+.tab{overflow-x:auto;background:var(--cartao);border:1px solid var(--linha);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--linha);text-align:left;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+th{font-weight:500;color:var(--texto3);font-size:13px}
+th.ord{cursor:pointer}th.ord:hover{color:var(--texto)}
+.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr.clic{cursor:pointer}tbody tr.clic:hover{background:#f3f2ee}
+tr.sel td{background:#eaf2fd}
+td.pos{color:var(--texto3);width:30px}td.reg{color:var(--texto3)}
+.mini{width:120px}.mini .barra{margin:0}
+.dif{width:170px}.dif .eixo{position:relative;height:9px;background:var(--trilho);border-radius:5px}
+.dif .eixo i{position:absolute;top:0;height:100%;border-radius:2px}.dif .eixo b{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--texto3)}
+.planos{display:grid;grid-template-columns:1fr 1fr;gap:4px 36px}
+.planos .top{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.planos .item{margin-bottom:12px}.planos .sub{font-size:12.5px;color:var(--texto3)}
+details{border-top:1px solid var(--linha);padding-top:14px;color:var(--texto2);font-size:13.5px}
+details summary{cursor:pointer;color:var(--texto);font-size:14px}
+details p{max-width:680px;margin-top:9px}
+svg text{font-family:'Segoe UI',system-ui,Arial,sans-serif}
+.vazio{color:var(--texto3);padding:14px 0}
+@media (max-width:820px){.grade,.planos{grid-template-columns:1fr}h1{font-size:25px}.filtros{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="cripto.js" data-arquivo="fin.enc" data-var="FIN" data-sal="ufit-fin" data-titulo="Painel de Vendas"></script>
+<script type="text/plain" class="app">
+(function () {
+'use strict';
+var D = window.FIN;
+var MESES_NOME = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+var MESES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+var REGIOES = ['Norte', 'Sul', 'Sem região'];
+var TIPOS = ['Anual', 'Semestral', 'Trimestral', 'Mensal, recorrente e outros'];
+
+var hoje, mesAtual, diaHoje, meses, tipoDe, UN, ids;
+function preparar() {
+  hoje = D.hoje; mesAtual = hoje.slice(0, 7); diaHoje = +hoje.slice(8, 10);
+  meses = [];
+  for (var m = D.desde.slice(0, 7); m <= mesAtual; m = proxMes(m)) meses.push(m);
+  tipoDe = D.planos.map(tipoPlano);
+  UN = D.unidades;
+  ids = Object.keys(UN).sort(function (a, b) { return UN[a].nome.localeCompare(UN[b].nome, 'pt-BR'); });
+}
+function proxMes(m) { var a = +m.slice(0, 4), b = +m.slice(5, 7); return b === 12 ? (a + 1) + '-01' : a + '-' + ('0' + (b + 1)).slice(-2); }
+function diasNoMes(m) { return new Date(+m.slice(0, 4), +m.slice(5, 7), 0).getDate(); }
+function curto(m) { return MESES_CURTO[+m.slice(5, 7) - 1] + '/' + m.slice(2, 4); }
+function nomeMes(m) { return MESES_NOME[+m.slice(5, 7) - 1]; }
+function mesAnterior(m) { var i = meses.indexOf(m); return i > 0 ? meses[i - 1] : null; }
+function tipoPlano(n) { return /ANUAL/.test(n) ? 0 : /SEMESTR/.test(n) ? 1 : /TRIMESTRAL/.test(n) ? 2 : 3; }
+preparar();
+
+// período = {m: 'AAAA-MM', ate: último dia contado}
+function periodoMes(m) { return { m: m, ate: m === mesAtual ? diaHoje : diasNoMes(m) }; }
+function rotulo(p) {
+  if (p.m === mesAtual) return curto(p.m) + ' · dias 1–' + p.ate;
+  return p.ate >= diasNoMes(p.m) ? curto(p.m) + ' · mês fechado' : curto(p.m) + ' · dias 1–' + p.ate;
+}
+function rotuloFrase(p) {
+  return nomeMes(p.m) + ' (' + (p.m !== mesAtual && p.ate >= diasNoMes(p.m) ? 'mês fechado' : 'dias 1–' + p.ate) + ')';
+}
+function chave(p) { return p.m + ':' + p.ate; }
+function deChave(k) { var s = k.split(':'); return { m: s[0], ate: +s[1] }; }
+
+
+// ---------- agregação ----------
+function vazio() { return { n: 0, v: 0, b: 0 }; }
+function somar(a, l) { a.n += l[3]; a.v += l[4]; a.b += l[5]; }
+function agregar(p, f) {
+  var r = { tot: vazio(), uni: {}, reg: {}, plano: {}, tipo: [vazio(), vazio(), vazio(), vazio()] };
+  var ini = p.m + '-01', fim = p.m + '-' + ('0' + p.ate).slice(-2);
+  for (var i = 0; i < D.linhas.length; i++) {
+    var l = D.linhas[i];
+    if (l[0] < ini || l[0] > fim) continue;
+    var u = UN[l[1]] || { regiao: 'Sem região' };
+    if (f.regiao && u.regiao !== f.regiao) continue;
+    if (f.unidade && String(l[1]) !== f.unidade) continue;
+    somar(r.tot, l);
+    somar(r.uni[l[1]] || (r.uni[l[1]] = vazio()), l);
+    somar(r.reg[u.regiao] || (r.reg[u.regiao] = vazio()), l);
+    somar(r.plano[l[2]] || (r.plano[l[2]] = vazio()), l);
+    somar(r.tipo[tipoDe[l[2]]], l);
+  }
+  return r;
+}
+function med(a) { return E.medida === 'n' ? a.n : a.v; }
+function ticket(a) { return a.n ? a.v / a.n : 0; }
+function desconto(a) { return a.b ? 1 - a.v / a.b : 0; }
+
+// ---------- formatos ----------
+function fmt(x, c) { return x.toLocaleString('pt-BR', { minimumFractionDigits: c || 0, maximumFractionDigits: c || 0 }); }
+function brl(x, c) { return 'R$ ' + fmt(x, c); }
+function mi(x) { return x >= 1e6 ? 'R$ ' + fmt(x / 1e6, 2) + ' mi' : x >= 1e3 ? 'R$ ' + fmt(x / 1e3, 0) + ' mil' : brl(x); }
+function valorMed(x, c) { return E.medida === 'n' ? fmt(x, c && x < 100 ? 1 : 0) : brl(x, c); }
+function pct(x, c) { return fmt(x * 100, c === undefined ? 1 : c) + '%'; }
+function variacao(a, b) { // a contra b
+  if (!b) return a ? { t: 'nova', c: '' } : { t: '—', c: '' };
+  var x = a / b - 1;
+  if (x > 9.99) return { t: '▲ >999%', c: 'sobe' };
+  var t = Math.abs(x) >= 1 ? fmt(Math.abs(x) * 100, 0) + '%' : pct(Math.abs(x));
+  return x >= 0 ? { t: '▲ ' + t, c: 'sobe' } : { t: '▼ ' + t, c: 'desce' };
+}
+function varHtml(a, b) { var v = variacao(a, b); return '<span class="' + v.c + '">' + v.t + '</span>'; }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+// ---------- estado ----------
+var E = { aba: location.hash === '#comparar' ? 'comparar' : 'geral', mes: mesAtual, regiao: '', unidade: '', medida: 'v',
+          ord: 'v', ordDir: -1, cmp: 'dia', A: null, B: null };
+(function () {
+  E.A = chave(periodoMes(mesAtual));
+  var ant = mesAnterior(mesAtual);
+  E.B = ant ? chave(periodoMes(ant)) : E.A;
+})();
+function filtro() { return { regiao: E.regiao, unidade: E.unidade }; }
+function escopo() {
+  if (E.unidade) return 'a unidade ' + UN[E.unidade].nome;
+  if (E.regiao) return E.regiao === 'Sem região' ? 'as unidades sem região' : 'a região ' + E.regiao;
+  return 'a rede';
+}
+function escopoEm() {
+  if (E.unidade) return 'na unidade ' + UN[E.unidade].nome;
+  if (E.regiao) return E.regiao === 'Sem região' ? 'nas unidades sem região' : 'na região ' + E.regiao;
+  return 'na rede';
+}
+
+// ---------- componentes ----------
+function seg(id, valor, opcoes) {
+  return '<div class="seg" role="group">' + opcoes.map(function (o) {
+    return '<button type="button" data-seg="' + id + '" data-v="' + esc(o[0]) + '" aria-pressed="' + (o[0] === valor) + '">' + esc(o[1]) + '</button>';
+  }).join('') + '</div>';
+}
+function selUnidade() {
+  var lista = ids.filter(function (i) { return !E.regiao || UN[i].regiao === E.regiao; });
+  return '<select id="selUni" aria-label="Unidade"><option value="">' + (E.regiao ? 'Toda a região' : 'Toda a rede') + '</option>' +
+    lista.map(function (i) { return '<option value="' + i + '"' + (i === E.unidade ? ' selected' : '') + '>' + esc(UN[i].nome) + '</option>'; }).join('') + '</select>';
+}
+function opcoesPeriodo() {
+  var out = [];
+  meses.slice().reverse().forEach(function (m) {
+    out.push(periodoMes(m));
+    if (m !== mesAtual && diaHoje < diasNoMes(m)) out.push({ m: m, ate: diaHoje });
+  });
+  return out;
+}
+function selPeriodo(id, valor) {
+  return '<select id="' + id + '" aria-label="Período">' + opcoesPeriodo().map(function (p) {
+    var k = chave(p); return '<option value="' + k + '"' + (k === valor ? ' selected' : '') + '>' + rotulo(p) + '</option>';
+  }).join('') + '</select>';
+}
+function filtrosComuns() {
+  return '<div class="f"><label>Região</label>' + seg('regiao', E.regiao, [['', 'Toda a rede'], ['Norte', 'Norte'], ['Sul', 'Sul'], ['Sem região', 'Sem região']]) + '</div>' +
+    '<div class="f"><label>Unidade</label>' + selUnidade() + '</div>' +
+    '<div class="f"><label>Medir por</label>' + seg('medida', E.medida, [['v', 'Valor (R$)'], ['n', 'Contratos']]) + '</div>';
+}
+function barra(x, max) { return '<div class="barra"><i style="width:' + (max > 0 ? Math.max(0, Math.min(100, x / max * 100)) : 0) + '%"></i></div>'; }
+
+// ---------- Visão geral ----------
+function geral() {
+  var p = periodoMes(E.mes), ant = mesAnterior(E.mes), pa = ant ? periodoMes(ant) : null;
+  var r = agregar(p, filtro()), ra = pa ? agregar(pa, filtro()) : null;
+  var dia = r.tot.v / p.ate, diaA = ra ? ra.tot.v / pa.ate : 0, nd = r.tot.n / p.ate, ndA = ra ? ra.tot.n / pa.ate : 0;
+  var corrente = E.mes === mesAtual, h = '';
+
+  var frase = 'Em <b>' + rotuloFrase(p) + '</b>, ' + escopo() + ' vendeu <b>' + brl(r.tot.v) + '</b> em <b>' + fmt(r.tot.n) + '</b> contratos';
+  if (ra && diaA) { var x = dia / diaA - 1; frase += ', com ritmo diário <b>' + pct(Math.abs(x)) + '</b> ' + (x >= 0 ? 'acima' : 'abaixo') + ' de ' + nomeMes(ant) + '.'; }
+  else frase += '.';
+  document.getElementById('frase').innerHTML = frase;
+
+  h += '<div class="filtros"><div class="f"><label>Mês</label>' + seg('mes', E.mes, meses.map(function (m) { return [m, rotulo(periodoMes(m)).replace(' · mês fechado', '')]; })) + '</div>' + filtrosComuns() + '</div>';
+
+  var vs = ra ? ' vs ' + nomeMes(ant) : '';
+  h += '<div class="kpis">' +
+    kpi('Vendas líquidas', brl(r.tot.v), ra ? varHtml(dia, diaA) + ' no ritmo diário' + vs : '', 'Valor dos contratos vendidos, já sem os descontos.') +
+    kpi('Contratos vendidos', fmt(r.tot.n), ra ? varHtml(nd, ndA) + ' no ritmo diário' + vs : '', 'Inclui contratos sem valor, como permutas, parcerias e funcionários.') +
+    kpi('Ticket médio', brl(ticket(r.tot), 2), ra ? varHtml(ticket(r.tot), ticket(ra.tot)) + vs : '', 'Valor líquido dividido pelo número de contratos.') +
+    kpi('Desconto médio', pct(desconto(r.tot)), ra ? difPP(desconto(r.tot), desconto(ra.tot)) + vs : '', 'Descontos concedidos sobre o valor bruto dos contratos.') +
+    (corrente
+      ? kpi('Projeção de fechamento', brl(dia * diasNoMes(E.mes)), ra ? varHtml(dia * diasNoMes(E.mes), ra.tot.v) + ' vs total de ' + nomeMes(ant) : '',
+          'Projeção linear: média de ' + brl(dia) + ' por dia × ' + diasNoMes(E.mes) + ' dias do mês.', 'proj')
+      : kpi('Média por dia', brl(dia), ra ? varHtml(dia, diaA) + vs : '', 'Vendas líquidas divididas pelos ' + p.ate + ' dias do mês.')) +
+    '</div>';
+
+  h += '<div class="grade"><section><h2>Evolução mês a mês</h2><p class="exp">Barra cheia: vendido no período. Contorno tracejado: projeção do mês em andamento. ' +
+    'Abaixo de cada mês, a média por dia. Toque num mês para selecioná-lo.</p>' + evolucao() + '</section>' +
+    '<section class="mix"><h2>Mix por tipo de plano</h2><p class="exp">Tipo identificado pelo nome do plano no EVO, no mês, na região e na unidade selecionados.</p>' + mix(r) + '</section></div>';
+
+  if (!E.unidade) h += regioes(r, ra, p, pa);
+  h += ranking(r, ra, p, pa);
+  h += planosTop(r);
+  h += comoLer();
+  return h;
+}
+function kpi(t, v, d, p, cls) {
+  return '<div class="k ' + (cls || '') + '"><h3>' + t + '</h3><div class="v">' + v + '</div><div class="d">' + d + '</div><p>' + p + '</p></div>';
+}
+function difPP(a, b) {
+  var x = (a - b) * 100; return '<span class="' + (x <= 0 ? 'sobe' : 'desce') + '">' + (x >= 0 ? '▲ ' : '▼ ') + fmt(Math.abs(x), 1) + ' p.p.</span>';
+}
+function evolucao() {
+  var W = 640, H = 300, base = 250, topo = 40, n = meses.length, larg = W / n, bw = Math.min(110, larg * 0.6);
+  var dados = meses.map(function (m) {
+    var p = periodoMes(m), r = agregar(p, filtro()), v = med(r.tot);
+    return { m: m, v: v, proj: m === mesAtual ? v / p.ate * diasNoMes(m) : null, dia: v / p.ate };
+  });
+  var max = Math.max.apply(null, dados.map(function (d) { return Math.max(d.v, d.proj || 0); })) || 1;
+  var y = function (v) { return base - (base - topo) * v / max; };
+  var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Vendas por mês">';
+  s += '<line x1="0" x2="' + W + '" y1="' + base + '" y2="' + base + '" stroke="#c9c7c1"/>';
+  dados.forEach(function (d, i) {
+    var cx = larg * i + larg / 2, x = cx - bw / 2, sel = d.m === E.mes, cor = sel ? '#2a7de1' : '#c9c7c1';
+    s += '<g data-mes="' + d.m + '" style="cursor:pointer"><rect x="' + (cx - larg / 2) + '" y="0" width="' + larg + '" height="' + H + '" fill="transparent"/>';
+    if (d.proj) {
+      s += '<rect x="' + x + '" y="' + y(d.proj) + '" width="' + bw + '" height="' + (base - y(d.proj)) + '" fill="none" stroke="#2a7de1" stroke-dasharray="4 3"/>';
+      s += '<text x="' + cx + '" y="' + (y(d.proj) - 8) + '" text-anchor="middle" font-size="12" fill="#55534e">proj. ' + (E.medida === 'n' ? fmt(d.proj) : mi(d.proj)) + '</text>';
+    }
+    s += '<rect x="' + x + '" y="' + y(d.v) + '" width="' + bw + '" height="' + (base - y(d.v)) + '" fill="' + cor + '"/>';
+    s += '<text x="' + cx + '" y="' + (y(d.v) - 8) + '" text-anchor="middle" font-size="14" font-weight="600" fill="#1d1c1a">' + (E.medida === 'n' ? fmt(d.v) : mi(d.v)) + '</text>';
+    s += '<text x="' + cx + '" y="' + (base + 20) + '" text-anchor="middle" font-size="14" fill="#1d1c1a"' + (sel ? ' font-weight="700"' : '') + '>' + curto(d.m) + '</text>';
+    s += '<text x="' + cx + '" y="' + (base + 38) + '" text-anchor="middle" font-size="12" fill="#8a8780">' + (E.medida === 'n' ? fmt(d.dia, 1) + '/dia' : brl(d.dia) + '/dia') + '</text></g>';
+  });
+  return s + '</svg>';
+}
+function mix(r) {
+  var tot = med(r.tot);
+  if (!r.tot.n) return '<p class="vazio">Sem vendas no período.</p>';
+  return r.tipo.map(function (a, i) {
+    return '<div class="item"><div class="top"><span>' + TIPOS[i] + '</span><b>' + valorMed(med(a)) + '</b></div>' + barra(med(a), tot) +
+      '<div class="sub">' + pct(tot ? med(a) / tot : 0) + ' do ' + (E.medida === 'n' ? 'total' : 'valor') + ' · ' + fmt(a.n) + ' contratos · ticket ' + brl(ticket(a), 2) + '</div></div>';
+  }).join('');
+}
+function regioes(r, ra, p, pa) {
+  var nUni = {}; ids.forEach(function (i) { nUni[UN[i].regiao] = (nUni[UN[i].regiao] || 0) + 1; });
+  var tot = 0, linhas = REGIOES.map(function (g) {
+    var a = r.reg[g] || vazio(), b = ra ? (ra.reg[g] || vazio()) : null; tot += med(a);
+    return { g: g, a: a, b: b };
+  }).filter(function (x) { return nUni[x.g]; });
+  var max = Math.max.apply(null, linhas.map(function (x) { return med(x.a); })) || 1;
+  var h = '<section><h2>Resultado por região</h2><p class="exp">No mês selecionado. Clique numa região para filtrar o painel inteiro por ela. ' +
+    'Vendas por unidade é o valor da região dividido pelo número de unidades.</p><div class="tab"><table><thead><tr><th>Região</th><th class="n">Unidades</th><th></th>' +
+    '<th class="n">Valor líquido</th><th class="n">Contratos</th><th class="n">Ticket médio</th><th class="n">Vendas por unidade</th><th class="n">Var. ritmo diário</th><th class="n">% da rede</th></tr></thead><tbody>';
+  linhas.forEach(function (x) {
+    h += '<tr class="clic' + (E.regiao === x.g ? ' sel' : '') + '" data-regiao="' + x.g + '"><td>' + x.g + '</td><td class="n">' + nUni[x.g] + '</td><td class="mini">' + barra(med(x.a), max) + '</td>' +
+      '<td class="n">' + brl(x.a.v) + '</td><td class="n">' + fmt(x.a.n) + '</td><td class="n">' + brl(ticket(x.a), 2) + '</td><td class="n">' + brl(x.a.v / nUni[x.g]) + '</td>' +
+      '<td class="n">' + (x.b ? varHtml(med(x.a) / p.ate, med(x.b) / pa.ate) : '—') + '</td><td class="n">' + pct(tot ? med(x.a) / tot : 0) + '</td></tr>';
+  });
+  return h + '</tbody></table></div></section>';
+}
+function ranking(r, ra, p, pa) {
+  var lista = ids.filter(function (i) { return !E.regiao || UN[i].regiao === E.regiao; }).map(function (i) {
+    var a = r.uni[i] || vazio(), b = ra ? (ra.uni[i] || vazio()) : null;
+    return { id: i, a: a, b: b, ritmo: b ? (med(b) ? med(a) / p.ate / (med(b) / pa.ate) - 1 : (med(a) ? Infinity : -Infinity)) : 0 };
+  });
+  var tot = lista.reduce(function (s, x) { return s + med(x.a); }, 0);
+  var chaveOrd = { nome: function (x) { return UN[x.id].nome; }, reg: function (x) { return UN[x.id].regiao + UN[x.id].nome; },
+    v: function (x) { return med(x.a); }, n: function (x) { return x.a.n; }, t: function (x) { return ticket(x.a); }, r: function (x) { return x.ritmo; } }[E.ord];
+  lista.sort(function (x, y) { var a = chaveOrd(x), b = chaveOrd(y); return (typeof a === 'string' ? a.localeCompare(b, 'pt-BR') : a - b) * E.ordDir; });
+  var max = Math.max.apply(null, lista.map(function (x) { return med(x.a); })) || 1;
+  var th = function (k, t, n) { return '<th class="ord' + (n ? ' n' : '') + '" data-ord="' + k + '">' + t + (E.ord === k ? (E.ordDir < 0 ? ' ↓' : ' ↑') : '') + '</th>'; };
+  var h = '<section><h2>Ranking de unidades</h2><p class="exp">Clique numa unidade para filtrar o painel inteiro por ela e no título de uma coluna para ordenar. ' +
+    'A variação do ritmo compara a média diária de vendas com a do mês anterior; % do total é a fatia da unidade no valor vendido da rede, ou da região quando ela estiver filtrada.</p>' +
+    '<div class="tab"><table><thead><tr><th>#</th>' + th('nome', 'Unidade') + th('reg', 'Região') + '<th></th>' + th('v', E.medida === 'n' ? 'Contratos' : 'Valor líquido', 1) +
+    th('n', 'Contratos', 1) + th('t', 'Ticket médio', 1) + th('r', 'Var. ritmo diário', 1) + '<th class="n">% do total</th></tr></thead><tbody>';
+  lista.forEach(function (x, i) {
+    h += '<tr class="clic' + (E.unidade === x.id ? ' sel' : '') + '" data-unidade="' + x.id + '"><td class="pos">' + (i + 1) + '</td><td>' + esc(UN[x.id].nome) + '</td><td class="reg">' + UN[x.id].regiao + '</td>' +
+      '<td class="mini">' + barra(med(x.a), max) + '</td><td class="n">' + (E.medida === 'n' ? fmt(x.a.n) : brl(x.a.v)) + '</td><td class="n">' + fmt(x.a.n) + '</td>' +
+      '<td class="n">' + (x.a.n ? brl(ticket(x.a), 2) : '—') + '</td><td class="n">' + (x.b ? varHtml(med(x.a) / p.ate, med(x.b) / pa.ate) : '—') + '</td>' +
+      '<td class="n">' + pct(tot ? med(x.a) / tot : 0) + '</td></tr>';
+  });
+  return h + '</tbody></table></div></section>';
+}
+function planosTop(r) {
+  var tot = med(r.tot);
+  var top = Object.keys(r.plano).map(function (k) { return { nome: D.planos[k], a: r.plano[k] }; })
+    .sort(function (x, y) { return med(y.a) - med(x.a); }).slice(0, 10);
+  var max = top.length ? med(top[0].a) : 1;
+  return '<section><h2>Planos mais vendidos</h2><p class="exp">Os 10 planos que mais venderam no mês, na região e na unidade selecionados.</p>' +
+    (top.length ? '<div class="planos">' + top.map(function (x) {
+      return '<div class="item"><div class="top"><span>' + esc(x.nome) + '</span><b>' + valorMed(med(x.a)) + '</b></div>' + barra(med(x.a), max) +
+        '<div class="sub">' + pct(tot ? med(x.a) / tot : 0) + ' do ' + (E.medida === 'n' ? 'total' : 'valor') + ' · ' + fmt(x.a.n) + ' contratos · ticket ' + brl(ticket(x.a), 2) + '</div></div>';
+    }).join('') + '</div>' : '<p class="vazio">Sem vendas no período.</p>') + '</section>';
+}
+function comoLer() {
+  return '<details><summary>Como ler os números</summary>' +
+    '<p>Origem: EVO, vendas de planos lidas direto pela API a cada hora. Entram vendas manuais e online; ficam de fora o débito recorrente, as vendas removidas e as trocas de contrato a R$ 0. ' +
+    'A API e o relatório Vendas Detalhadas do EVO podem diferir em poucos contratos (em outubro/26: +0,5% no valor e +2,7% em contratos).</p>' +
+    '<p>O valor é sempre líquido de descontos. Ticket médio é o valor líquido dividido pelo número de contratos.</p>' +
+    '<p>Mês em andamento não é comparável a um mês fechado pelo total. Por isso as variações de vendas e de contratos usam o ritmo diário: o total dividido pelos dias corridos do período (o dia de hoje conta).</p>' +
+    '<p>A projeção de fechamento é linear: a média diária do período multiplicada pelos dias do mês. Ela não considera sazonalidade nem campanhas.</p>' +
+    '<p>O tipo de plano vem do nome do plano: Anual, Semestral ou Trimestral quando o nome traz essa palavra; os demais ficam em Mensal, recorrente e outros.</p>' +
+    '<p>Regiões: Norte com 15 unidades e Sul com 12, conforme a lista da Diretoria Financeira (Bombinhas Bombas incluída no Sul). Roosevelt não estava na lista e aparece como Sem região.</p>' +
+    '<p>Os nomes das unidades foram encurtados para leitura; o nome original do EVO continua na base.</p></details>';
+}
+
+// ---------- Comparar períodos ----------
+function comparar() {
+  var A = deChave(E.A), B = deChave(E.B), f = filtro(), ra = agregar(A, f), rb = agregar(B, f), porDia = E.cmp === 'dia';
+  var dvA = ra.tot.v / A.ate, dvB = rb.tot.v / B.ate, dnA = ra.tot.n / A.ate, dnB = rb.tot.n / B.ate;
+  var h = '<div class="filtros">' + filtrosComuns() +
+    '<div class="f"><label>Período A</label>' + selPeriodo('selA', E.A) + '</div><div class="f"><label>Período B</label>' + selPeriodo('selB', E.B) + '</div>' +
+    '<div class="f"><label>Comparar por</label>' + seg('cmp', E.cmp, [['dia', 'Média por dia'], ['total', 'Total do período']]) + '</div></div>';
+
+  var x = porDia ? [dvA, dvB, dnA, dnB] : [ra.tot.v, rb.tot.v, ra.tot.n, rb.tot.n];
+  var fr = function (a, b) { if (!b) return 'sem base de comparação'; var v = a / b - 1; return pct(Math.abs(v)) + (v >= 0 ? ' acima' : ' abaixo'); };
+  document.getElementById('frase').innerHTML = '<b>' + rotuloFrase(A) + '</b> contra <b>' + rotuloFrase(B) + '</b>, ' + escopoEm() +
+    ': ' + (porDia ? 'na média por dia, ' : 'no total, ') + 'as vendas ficaram ' + fr(x[0], x[1]) + ' e os contratos ' + fr(x[2], x[3]) + '.';
+
+  var lin = function (nome, a, b, fm, pp) {
+    var d = a - b;
+    return '<tr><td>' + nome + '</td><td class="n">' + fm(a) + '</td><td class="n">' + fm(b) + '</td><td class="n">' + (pp ? (d >= 0 ? '+' : '−') + fmt(Math.abs(d) * 100, 1) + ' p.p.' : (d >= 0 ? '+' : '−') + fm(Math.abs(d))) + '</td>' +
+      '<td class="n">' + (pp ? '—' : varHtml(a, b)) + '</td></tr>';
+  };
+  h += '<section><h2>Indicadores lado a lado</h2><div class="tab"><table><thead><tr><th>Indicador</th><th class="n">A: ' + rotulo(A) + '</th><th class="n">B: ' + rotulo(B) + '</th><th class="n">Diferença</th><th class="n">Variação</th></tr></thead><tbody>' +
+    lin('Vendas líquidas', ra.tot.v, rb.tot.v, function (v) { return brl(v); }) +
+    lin('Vendas por dia', dvA, dvB, function (v) { return brl(v); }) +
+    lin('Contratos', ra.tot.n, rb.tot.n, function (v) { return fmt(v); }) +
+    lin('Contratos por dia', dnA, dnB, function (v) { return fmt(v, 1); }) +
+    lin('Ticket médio', ticket(ra.tot), ticket(rb.tot), function (v) { return brl(v, 2); }) +
+    lin('Desconto médio', desconto(ra.tot), desconto(rb.tot), function (v) { return pct(v); }, true) +
+    '</tbody></table></div></section>';
+
+  var val = function (a, p) { return porDia ? med(a) / p.ate : med(a); };
+  var fv = function (v) { return E.medida === 'n' ? fmt(v, porDia ? 1 : 0) + (porDia ? '/dia' : '') : brl(v) + (porDia ? '/dia' : ''); };
+  var tabela = function (titulo, exp, linhas, campo) {
+    var maxd = Math.max.apply(null, linhas.map(function (l) { return Math.abs(l.a - l.b); })) || 1;
+    return '<section><h2>' + titulo + '</h2><p class="exp">' + exp + '</p><div class="tab"><table><thead><tr><th>' + (campo === 'unidade' ? 'Unidade</th><th>Região' : 'Região') + '</th>' +
+      '<th class="n">A: ' + rotulo(A) + '</th><th class="n">B: ' + rotulo(B) + '</th><th></th><th class="n">Diferença</th><th class="n">Variação</th></tr></thead><tbody>' +
+      linhas.map(function (l) {
+        var d = l.a - l.b, w = Math.abs(d) / maxd * 50;
+        return '<tr class="clic' + (E[campo] === l.k ? ' sel' : '') + '" data-' + campo + '="' + esc(l.k) + '"><td>' + esc(l.nome) + '</td>' + (campo === 'unidade' ? '<td class="reg">' + l.reg + '</td>' : '') +
+          '<td class="n">' + fv(l.a) + '</td><td class="n">' + fv(l.b) + '</td>' +
+          '<td class="dif"><div class="eixo"><i style="' + (d >= 0 ? 'left:50%;background:var(--bom)' : 'right:50%;background:var(--ruim)') + ';width:' + w + '%"></i><b></b></div></td>' +
+          '<td class="n">' + (d >= 0 ? '+' : '−') + fv(Math.abs(d)) + '</td><td class="n">' + varHtml(l.a, l.b) + '</td></tr>';
+      }).join('') + '</tbody></table></div></section>';
+  };
+  var unid = porDia ? 'Valores em média por dia corrido de cada período.' : 'Valores totais de cada período.';
+  if (!E.unidade) {
+    var nUni = {}; ids.forEach(function (i) { nUni[UN[i].regiao] = 1; });
+    h += tabela('Diferença por região', unid + ' Clique numa região para filtrar o painel por ela.',
+      REGIOES.filter(function (g) { return nUni[g] && (!E.regiao || g === E.regiao); }).map(function (g) {
+        return { k: g, nome: g, a: val(ra.reg[g] || vazio(), A), b: val(rb.reg[g] || vazio(), B) };
+      }), 'regiao');
+  }
+  var lu = ids.filter(function (i) { return (!E.regiao || UN[i].regiao === E.regiao) && (!E.unidade || i === E.unidade); }).map(function (i) {
+    return { k: i, nome: UN[i].nome, reg: UN[i].regiao, a: val(ra.uni[i] || vazio(), A), b: val(rb.uni[i] || vazio(), B) };
+  }).filter(function (l) { return l.a || l.b; }).sort(function (x, y) { return (y.a - y.b) - (x.a - x.b); });
+  h += tabela('Diferença por unidade', unid + ' Ordenado de quem mais ganhou para quem mais perdeu do período B para o A. Clique numa unidade para filtrar o painel por ela.', lu, 'unidade');
+  return h + comoLer();
+}
+
+// ---------- montagem e eventos ----------
+var app = document.getElementById('app');
+function desenhar() {
+  var abertos = app.querySelector('details') && app.querySelector('details').open;
+  var at = new Date(D.atualizadoEm);
+  app.innerHTML = '<div class="sobre">Rede UFit · Vendas de planos</div><h1>Painel de Vendas</h1><p class="frase" id="frase"></p>' +
+    '<p class="atual">Atualizado em ' + at.toLocaleDateString('pt-BR') + ' às ' + at.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' · os dados do EVO atualizam sozinhos a cada hora</p>' +
+    '<nav class="abas" role="tablist"><button type="button" role="tab" data-aba="geral" aria-selected="' + (E.aba === 'geral') + '">Visão geral</button>' +
+    '<button type="button" role="tab" data-aba="comparar" aria-selected="' + (E.aba === 'comparar') + '">Comparar períodos</button></nav><div id="corpo"></div>';
+  document.getElementById('corpo').innerHTML = E.aba === 'geral' ? geral() : comparar();
+  if (abertos) app.querySelector('details').open = true;
+}
+app.addEventListener('click', function (ev) {
+  var t = ev.target.closest('[data-aba],[data-seg],[data-mes],[data-ord],tr[data-regiao],tr[data-unidade]');
+  if (!t) return;
+  if (t.dataset.aba) { E.aba = t.dataset.aba; history.replaceState(null, '', E.aba === 'comparar' ? '#comparar' : '#'); }
+  else if (t.dataset.seg) {
+    var k = t.dataset.seg; E[k] = t.dataset.v;
+    if (k === 'regiao' && E.unidade && UN[E.unidade].regiao !== E.regiao) E.unidade = '';
+  }
+  else if (t.dataset.mes) E.mes = t.dataset.mes;
+  else if (t.dataset.ord) { if (E.ord === t.dataset.ord) E.ordDir = -E.ordDir; else { E.ord = t.dataset.ord; E.ordDir = /nome|reg/.test(E.ord) ? 1 : -1; } }
+  else if (t.dataset.regiao !== undefined) { E.regiao = E.regiao === t.dataset.regiao ? '' : t.dataset.regiao; E.unidade = ''; }
+  else if (t.dataset.unidade !== undefined) { E.unidade = E.unidade === t.dataset.unidade ? '' : t.dataset.unidade; }
+  var y = window.scrollY; desenhar(); window.scrollTo(0, y);
+});
+app.addEventListener('change', function (ev) {
+  var t = ev.target;
+  if (t.id === 'selUni') E.unidade = t.value;
+  else if (t.id === 'selA') E.A = t.value;
+  else if (t.id === 'selB') E.B = t.value;
+  else return;
+  var y = window.scrollY; desenhar(); window.scrollTo(0, y);
+});
+desenhar();
+// a página aberta o dia todo: relê os dados a cada 15 min
+setInterval(function () {
+  if (!window.UFIT_LER_MESMA) return;
+  window.UFIT_LER_MESMA(null).then(function (d) {
+    D = window.FIN = d; preparar();
+    if (meses.indexOf(E.mes) < 0) E.mes = mesAtual;
+    var y = window.scrollY; desenhar(); window.scrollTo(0, y); }).catch(function () {});
+}, 15 * 60000);
+})();
+</script>
+</body>
+</html>

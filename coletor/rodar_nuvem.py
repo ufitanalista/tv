@@ -2,7 +2,7 @@
 
 O workflow abre as listas e o estado (criptografados) nas pastas UFIT_CONFIG e UFIT_ESTADO, grava as
 credenciais em UFIT_CREDENCIAIS e roda:  python rodar_nuvem.py <pasta_saida>
-Saída: <pasta_saida>/dados.json (TVs) e, de hora em hora, <pasta_saida>/conv.json (convênios).
+Saída: <pasta_saida>/dados.json (TVs) e, de hora em hora, <pasta_saida>/conv.json (convênios) e fin.json (Painel de Vendas do financeiro).
 O log é público: só contagens, nunca nomes de clientes.
 """
 import json, os, sys, time
@@ -11,6 +11,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import coletor_core  # noqa: E402
 import coletor_convenios  # noqa: E402
+import coletor_financeiro  # noqa: E402
 import coletor_gestao  # noqa: E402
 import comissao_ops  # noqa: E402
 
@@ -73,6 +74,7 @@ def main(saida):
         json.dump(dados, f, ensure_ascii=False)
     print('TVs ok —', coletor_core.resumo(dados), flush=True)
     convenios(saida, guarda, cred_evo)
+    financeiro(saida, guarda, cred_evo)
     gestao_e_comissao(saida, guarda, cred_gv, dados, dp)
 
 
@@ -105,6 +107,18 @@ def gestao_e_comissao(saida, guarda, cred_gv, dados, dp):
             print('minha comissão ok —', n, 'consultores', flush=True)
     except Exception as e:
         print('ERRO na comissão dos consultores:', type(e).__name__, str(e)[:200], flush=True)
+
+
+def financeiro(saida, guarda, cred_evo):
+    """Painel de Vendas do financeiro (fin.json → fin.enc, senha do financeiro). Erro aqui nunca derruba as TVs."""
+    try:
+        fin = coletor_financeiro.coletar(cred_evo, guarda, lambda m: print(m, flush=True))
+        if fin:
+            with open(os.path.join(saida, 'fin.json'), 'w', encoding='utf-8') as f:
+                json.dump(fin, f, ensure_ascii=False)
+            print('financeiro ok —', coletor_financeiro.resumo(fin), flush=True)
+    except Exception as e:
+        print('ERRO no financeiro:', type(e).__name__, str(e)[:200], flush=True)
 
 
 def convenios(saida, guarda, cred_evo):

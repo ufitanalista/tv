@@ -32,6 +32,7 @@ jobs:
       CHAVE_DP: ${{ secrets.CHAVE_DP }}
       CHAVE_CONV: ${{ secrets.CHAVE_CONV }}
       CHAVE_GESTAO: ${{ secrets.CHAVE_GESTAO }}
+      CHAVE_FIN: ${{ secrets.CHAVE_FIN }}
       UFIT_CONFIG: /tmp/ufit/config
       UFIT_ESTADO: /tmp/ufit/estado
       UFIT_CREDENCIAIS: /tmp/ufit/cred
@@ -58,6 +59,7 @@ jobs:
             echo "estado: inicial"
           fi
           curl -fsS "$SITE_URL/$(node ferramentas/cripto.js variar conv.enc)" -o /tmp/ufit/conv-anterior.enc || echo "sem convênios anteriores"
+          curl -fsS "$SITE_URL/$(node ferramentas/cripto.js variar fin.enc)" -o /tmp/ufit/fin-anterior.enc || echo "sem painel de vendas anterior"
           printf '%s' "$EVO_CRED" > "$UFIT_CREDENCIAIS/evo-api-credentials.json"
           printf '%s' "$GOVOICE_CRED" > "$UFIT_CREDENCIAIS/govoice-credentials.json"
 
@@ -90,6 +92,12 @@ jobs:
                 break
               fi
             done
+          fi
+          # Painel de Vendas do financeiro: só abre com a senha do financeiro (coleta 1 vez por hora; entre elas republica o anterior)
+          if [ -n "$CHAVE_FIN" ] && [ -f /tmp/ufit/saida/fin.json ]; then
+            node ferramentas/cripto.js cifrar CHAVE_FIN /tmp/ufit/saida/fin.json public/fin.enc
+          elif [ -s /tmp/ufit/fin-anterior.enc ]; then
+            cp /tmp/ufit/fin-anterior.enc public/fin.enc
           fi
           # Painel da Gestão: só abre com a senha da gestão
           if [ -n "$CHAVE_GESTAO" ] && [ -f /tmp/ufit/saida/gestao.json ]; then

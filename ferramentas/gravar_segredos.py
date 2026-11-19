@@ -34,6 +34,7 @@ segredos = {
     'CHAVE_DP': chaves['dp'],  # aba Período da TV 2 (senha do DP)
     'CHAVE_CONV': chaves['conv'],  # Painel de convênios (senha própria)
     'CHAVE_GESTAO': chaves['gestao'],  # Painel da Gestão (senha própria)
+    'CHAVE_FIN': chaves['fin'],  # Painel de Vendas do financeiro (senha própria)
     'EVOTALKS_TOKEN': token_evotalks(),  # o mesmo do MCP "omni"; o coletor só faz consultas de leitura
 }
 for nome, valor in segredos.items():
