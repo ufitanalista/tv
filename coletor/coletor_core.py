@@ -516,11 +516,16 @@ def coletar(cred_evo, cred_gv, guarda):
     gn = ganhas()
     for v in dia + mes + hist:
         v['idEmployee'] = aj.get(v['id'], v['idEmployee'])
-        if not v['pago'] and v['id'] in gn:  # quando o EVO der o pagamento, vale a data do EVO
+        # venda dada como ganha à mão: vale SEMPRE a data em que foi dada como ganha, mesmo depois que o EVO
+        # der a baixa em outro dia/mês (regra do comercial, 19/11/2026: senão ela conta duas vezes, uma em cada mês)
+        if v['id'] in gn:
             v.update(pago=True, vencida=False, quando=gn[v['id']])
 
-    # conta no dia em que foi PAGA (venda de ontem paga hoje entra hoje)
-    pagas = [v for v in dia + mes if v['pago'] and v['quando'][:7] == hoje.isoformat()[:7]]
+    # conta no dia em que foi PAGA (venda de ontem paga hoje entra hoje). Inclui as vendas LANÇADAS em meses
+    # anteriores e pagas neste mês (regra do comercial, 19/11/2026: "se a pessoa pagou esse mês, conta para esse mês").
+    # Antes só entravam as lançadas no mês, e a TV ficava diferente da comissão do DP.
+    mes_atual = hoje.isoformat()[:7]
+    pagas = [v for v in {v['id']: v for v in hist + mes + dia}.values() if v['pago'] and v['quando'][:7] == mes_atual]
     nome_por_id = {}
     for o in g['operadores']:
         i = o.get('idEvo')
