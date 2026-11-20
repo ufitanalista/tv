@@ -335,6 +335,7 @@ button{font:inherit;color:inherit}
 .toptabs{display:flex;flex-direction:column;gap:.2rem;font-size:.78rem;color:var(--ink-2)}
 .toptabs span{display:flex;align-items:center;gap:.4rem;min-width:0}
 .toptabs i{width:.55rem;height:.55rem;border-radius:3px;flex:none}
+.toptabs em{font-style:normal;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .toptabs b{margin-left:auto;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 .glegend{display:flex;flex-wrap:wrap;gap:.3rem .9rem;font-size:.75rem;color:var(--ink-2)}
 .glegend span{display:inline-flex;align-items:center;gap:.35rem}
@@ -588,6 +589,24 @@ body::after{content:"";position:fixed;inset:-20%;pointer-events:none;z-index:0;
   #pp .com input.dias.mudou { border-color: var(--amarelo); }
   #pp .com small { font-size: 11px; color: var(--texto-3); font-weight: 600; display: block; }
   #pp .com td.zero { color: var(--texto-3); }
+
+/* ===== Aba Operação no modo TV: operadores (só online) em cima, campanhas lado a lado embaixo, nada vaza ===== */
+:root[data-modo="tv"] #v-operacao > .kpis,:root[data-modo="tv"] #v-operacao > .panel:not(.tabs-panel){flex:none}
+:root[data-modo="tv"] #v-operacao .kpi .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:root[data-modo="tv"] #v-operacao .panel{padding:.7rem 1rem;gap:.5rem}
+:root[data-modo="tv"] #v-operacao .ops{grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));gap:.45rem}
+:root[data-modo="tv"] #v-operacao .op{padding:.45rem .7rem;gap:.6rem}
+:root[data-modo="tv"] #v-operacao .op .avatar{--av:2rem}
+:root[data-modo="tv"] #v-operacao .op .st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:root[data-modo="tv"] #v-operacao .tabs-panel{flex:1 1 0;min-height:0;overflow:hidden}
+:root[data-modo="tv"] #v-operacao .teams{flex:1;min-height:0;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:.45rem}
+:root[data-modo="tv"] #v-operacao .team{min-height:0;overflow:hidden;padding:.6rem .7rem;gap:.4rem}
+:root[data-modo="tv"] #v-operacao .team .tn-h{flex-direction:column;align-items:flex-start;gap:0}
+:root[data-modo="tv"] #v-operacao .team .tn-h b{font-size:.9rem;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+:root[data-modo="tv"] #v-operacao .team .tnums{gap:.7rem;font-size:.62rem}
+:root[data-modo="tv"] #v-operacao .team .tnums b{font-size:1.05rem}
+:root[data-modo="tv"] #v-operacao .toptabs{min-height:0;overflow:hidden;font-size:.7rem}
+:root[data-modo="tv"] #v-operacao .toptabs span{white-space:nowrap}
 </style>
 
 
@@ -1032,13 +1051,28 @@ function metaKpi(meta, qtd, valor, rotulo){
   var p2 = valor / num(meta.valor) * 100; return kpi("g", rotulo, Math.round(p2) + "%", brl(valor) + " de " + brl(meta.valor), p2);
 }
 
+
+var FORA_RANKING = ["alana", "guilherme"];
+function noRanking(p){ return FORA_RANKING.indexOf(chaveDe(p)) < 0; }
+/* meta do dia = o que falta para a meta do mês ÷ dias de trabalho que sobram (seg–sáb, contando hoje) */
+function metaDiaRitmo(todos){
+  var mm = D.metaMes || CONFIG.metaMes, alvo = num(mm && mm.qtd);
+  if (!alvo) return null;
+  var mes = 0, hoje = 0;
+  todos.forEach(function(p){ mes += p.mes.qtd; hoje += p.hoje.qtd; });
+  var d = new Date(), y = d.getFullYear(), m = d.getMonth(), dias = 0;
+  for (var day = d.getDate(); day <= 31; day++){ var x = new Date(y, m, day); if (x.getMonth() !== m) break; if (x.getDay() > 0) dias++; }
+  if (!dias) return null;
+  return { qtd: Math.max(1, Math.ceil(Math.max(0, alvo - (mes - hoje)) / dias)) };
+}
 function viewRanking(campo){
   var v = $("v-" + campo); v.textContent = "";
-  var lista = rankear(participantes(D), campo);
+  var todos = participantes(D);
+  var lista = rankear(todos.filter(noRanking), campo);
   atualizarMovimento(campo, lista);
   var m = metasInd(D, campo);
   var humanos = lista.filter(function(p){ return !p.ia; });
-  var tot = lista.reduce(function(s, p){ return { q: s.q + p.qtd, v: s.v + p.valor }; }, { q: 0, v: 0 });
+  var tot = todos.reduce(function(s, p){ return { q: s.q + p[campo].qtd, v: s.v + p[campo].valor }; }, { q: 0, v: 0 });
   var atendidas = num(D.totais && D.totais.atendidas);
   var vendendo = humanos.filter(function(p){ return p.qtd > 0; }).length;
   var isHoje = campo === "hoje";
@@ -1050,7 +1084,7 @@ function viewRanking(campo){
     kpi("", "Ticket médio", tot.q ? brl(tot.v / tot.q) : "—", "por venda"),
     isHoje ? kpi("b", "Conversão hoje", atendidas ? (Math.round(humanos.reduce(function(s, p){ return s + p.qtd; }, 0) / atendidas * 1000) / 10).toLocaleString("pt-BR") + "%" : "—", "vendas ÷ ligações atendidas")
            : kpi("b", "Vendendo", vendendo + " de " + humanos.length, "com 1 venda ou mais"),
-    metaKpi(isHoje ? D.metaDia : (D.metaMes || CONFIG.metaMes), tot.q, tot.v, isHoje ? "Meta do dia" : "Meta do mês")));
+    metaKpi(isHoje ? (D.metaDia || metaDiaRitmo(todos)) : (D.metaMes || CONFIG.metaMes), tot.q, tot.v, isHoje ? "Meta do dia" : "Meta do mês")));
 
   // pódio
   var stage = h("section", { class: "stage", "aria-label": "Pódio" }, h("span", { class: "stage-label" }, "Pódio"));
@@ -1218,7 +1252,7 @@ function viewOperacao(){
     return (ordem[a.status] - ordem[b.status]) || ((a.desde ? a.desde.getTime() : 0) - (b.desde ? b.desde.getTime() : 0)) || a.nome.localeCompare(b.nome, "pt-BR");
   });
   var grid = h("div", { class: "ops" });
-  ops.forEach(function(p){
+  ops.filter(function(p){ return p.status !== "off"; }).forEach(function(p){
     var mins = p.desde ? Math.floor((Date.now() - p.desde.getTime()) / 60000) : null;
     var label = p.status === "pausa" ? "Pausa" + (p.pausa && (p.pausa.nome || p.pausa.motivo || (typeof p.pausa === "string" ? p.pausa : "")) ? ": " + (p.pausa.nome || p.pausa.motivo || p.pausa) : "")
       : p.status === "liga" ? "Em ligação" : p.status === "livre" ? "Livre" : "Deslogado(a)";
@@ -1230,7 +1264,7 @@ function viewOperacao(){
       h("div", { class: "nums" }, h("b", null, String(p.atendidas)), "atendidas", h("br"), p.hoje.qtd + " " + plural(p.hoje.qtd, "venda", "vendas"))));
   });
   v.append(h("section", { class: "panel" }, h("div", { class: "panel-h" }, h("h2", { class: "sec-h" }, "Operadores agora"), h("span", { class: "sec-sub" }, "pausa longa primeiro")),
-    ops.length ? grid : h("div", { class: "empty" }, h("b", null, "Nenhum operador logado agora"))));
+    grid.children.length ? grid : h("div", { class: "empty" }, h("b", null, "Nenhum operador logado agora"))));
 
   var gi = gruposInfo();
   var teams = h("div", { class: "teams" });
@@ -1245,7 +1279,7 @@ function viewOperacao(){
     var l = Object.keys(tab || {}).map(function(k){ var v = tab[k]; return [k, typeof v === "number" ? v : num(v && (v.qtd != null ? v.qtd : v.total))]; })
       .filter(function(x){ return x[1] > 0; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 5);
     var box = h("div", { class: "toptabs" });
-    l.forEach(function(x){ box.append(h("span", null, h("i", { style: "background:" + corTab(x[0]) }), x[0], h("b", null, String(x[1])))); });
+    l.forEach(function(x){ box.append(h("span", null, h("i", { style: "background:" + corTab(x[0]) }), h("em", null, x[0]), h("b", null, String(x[1])))); });
     return l.length ? box : null;
   }
   lista.forEach(function(e){
@@ -1267,7 +1301,7 @@ function viewOperacao(){
   });
   var leg = h("div", { class: "glegend" });
   gi.forEach(function(g){ leg.append(h("span", null, h("i", { style: "background:" + g.cor }), g.nome)); });
-  v.append(h("section", { class: "panel" }, h("div", { class: "panel-h" }, h("h2", { class: "sec-h" }, "Tabulações por campanha"), leg), teams));
+  v.append(h("section", { class: "panel tabs-panel" }, h("div", { class: "panel-h" }, h("h2", { class: "sec-h" }, "Tabulações por campanha"), leg), teams));
 }
 
 /* ---------- cabeçalho, ticker, abas ---------- */
