@@ -332,6 +332,10 @@ button{font:inherit;color:inherit}
 .team .tnums b{display:block;font-size:1.3rem;color:var(--ink);font-weight:600;line-height:1.1}
 .stackbar{display:flex;gap:2px;height:6px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.06)}
 .stackbar i{display:block;height:100%}
+.toptabs{display:flex;flex-direction:column;gap:.2rem;font-size:.78rem;color:var(--ink-2)}
+.toptabs span{display:flex;align-items:center;gap:.4rem;min-width:0}
+.toptabs i{width:.55rem;height:.55rem;border-radius:3px;flex:none}
+.toptabs b{margin-left:auto;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 .glegend{display:flex;flex-wrap:wrap;gap:.3rem .9rem;font-size:.75rem;color:var(--ink-2)}
 .glegend span{display:inline-flex;align-items:center;gap:.35rem}
 .glegend i{width:.55rem;height:.55rem;border-radius:3px;display:inline-block}
@@ -1230,25 +1234,40 @@ function viewOperacao(){
 
   var gi = gruposInfo();
   var teams = h("div", { class: "teams" });
-  var lista = [{ nome: "Todas as equipes", tab: D.tabTotal, membros: ops, todas: true }].concat(arr(D.equipes));
+  var lista = [{ nome: "Todas as campanhas", tab: D.tabTotal, membros: ops, todas: true }].concat(arr(D.equipes).filter(function(e){
+    return arr(e.campanhas).length || contarGrupos(e.tab, gi).total > 0; }));
+  function corTab(k){
+    var t = arr(D.tabulacoes).filter(function(x){ return x.nome === k; })[0], gid = t ? String(t.grupo || "") : k;
+    var g = gi.filter(function(o){ return o.ids.indexOf(gid) >= 0 || o.match.test(gid); })[0];
+    return g ? g.cor : GRUPO_COR.imp;
+  }
+  function topTabs(tab){
+    var l = Object.keys(tab || {}).map(function(k){ var v = tab[k]; return [k, typeof v === "number" ? v : num(v && (v.qtd != null ? v.qtd : v.total))]; })
+      .filter(function(x){ return x[1] > 0; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 5);
+    var box = h("div", { class: "toptabs" });
+    l.forEach(function(x){ box.append(h("span", null, h("i", { style: "background:" + corTab(x[0]) }), x[0], h("b", null, String(x[1])))); });
+    return l.length ? box : null;
+  }
   lista.forEach(function(e){
     var c = contarGrupos(e.tab, gi);
-    var camp = arr(e.campanhas)[0] || {};
-    var pausada = arr(e.campanhas).some(function(x){ return x && (x.pausada || /paus/i.test(x.status || "")); });
+    var cs = arr(e.campanhas).filter(function(x){ return x && x.nome; });
+    var ativas = cs.filter(function(x){ return !x.pausada && !/paus/i.test(x.status || ""); });
+    var pausada = !e.todas && cs.length > 0 && !ativas.length;
+    var titulo = e.todas ? e.nome : ((ativas.length ? ativas : cs).map(function(x){ return String(x.nome).replace(/\s+/g, " ").trim(); }).join(" · ") || String(e.nome || "Equipe"));
     var nMemb = e.todas ? ops.length : arr(e.membros).length;
     var bar = h("div", { class: "stackbar", role: "img", "aria-label": c.total + " tabuladas" });
     gi.forEach(function(g){ if (c[g.k]) bar.append(h("i", { style: "width:" + (c[g.k] / c.total * 100).toFixed(1) + "%;background:" + g.cor, title: g.nome + ": " + c[g.k] })); });
     teams.append(h("div", { class: "team" },
-      h("div", { class: "tn-h" }, h("b", null, String(e.nome || "Equipe")), h("span", { class: pausada ? "paused" : "" }, pausada ? "pausada" : (camp.nome ? String(camp.nome).slice(0, 22) : ""))),
+      h("div", { class: "tn-h" }, h("b", null, titulo), pausada ? h("span", { class: "paused" }, "pausada") : null),
       h("div", { class: "tnums" },
         h("span", null, h("b", null, String(c.total)), "tabuladas"),
         h("span", null, h("b", null, c.total ? Math.round(c.pos / c.total * 100) + "%" : "0%"), "positivas"),
         h("span", null, h("b", null, String(nMemb)), plural(nMemb, "pessoa", "pessoas"))),
-      bar));
+      bar, topTabs(e.tab)));
   });
   var leg = h("div", { class: "glegend" });
   gi.forEach(function(g){ leg.append(h("span", null, h("i", { style: "background:" + g.cor }), g.nome)); });
-  v.append(h("section", { class: "panel" }, h("div", { class: "panel-h" }, h("h2", { class: "sec-h" }, "Tabulações por equipe"), leg), teams));
+  v.append(h("section", { class: "panel" }, h("div", { class: "panel-h" }, h("h2", { class: "sec-h" }, "Tabulações por campanha"), leg), teams));
 }
 
 /* ---------- cabeçalho, ticker, abas ---------- */
