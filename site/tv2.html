@@ -746,6 +746,7 @@ var CONFIG = {
   turno: { inicio: "08:00", horas: 6, dias: [1, 2, 3, 4, 5, 6] },   // padrão: 6h por dia, segunda a sábado (0 = domingo)
   turnoIA: { inicio: "00:00", fim: "23:59", dias: [0, 1, 2, 3, 4, 5, 6] },
   metaMes: { qtd: 300 },        // meta do mês da equipe (planos)
+  feriados: ["2026-11-20", "2026-12-25", "2027-01-01"],   // sem expediente: não contam na meta do dia e todos ficam de folga
   docEquipe: "config/equipe",  // metas e horários salvos pelo painel (link do Claude)
   minutosSemAtualizacao: 20,   // online os dados chegam a cada ~5 min
   pausaLongaMin: 15,
@@ -891,6 +892,7 @@ function turnoPadrao(p){
   return { inicio: t.inicio, fim: t.fim || fmtHM(ini + (t.horas || 6) * 60), dias: (t.dias || [1, 2, 3, 4, 5, 6]).slice() };
 }
 
+function ehFeriado(x){ var s = x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); return (CONFIG.feriados || []).indexOf(s) >= 0; }
 var HORARIOS_FIXOS = {
   alana: { inicio: "08:00", fim: "14:15" }, renato: { inicio: "08:00", fim: "14:15" }, leticia: { inicio: "08:00", fim: "14:15" },
   felipe: { inicio: "14:15", fim: "20:30" }, marcus: { inicio: "14:15", fim: "20:30" }, natalia: { inicio: "14:15", fim: "20:30" }
@@ -908,7 +910,7 @@ function ritmo(p, qtd, agora){
   var base = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   var a = base + ini * 60000, b = base + fim * 60000;
   if (fim > 1440 && now < a && now < b - 864e5){ a -= 864e5; b -= 864e5; }   // turno que passou da meia-noite
-  var trabalha = t.dias.indexOf(new Date(a).getDay()) >= 0;
+  var trabalha = t.dias.indexOf(new Date(a).getDay()) >= 0 && !ehFeriado(new Date(a));
   var f = Math.max(0, Math.min(1, (now - a) / (b - a)));
   var r = { m: m, t: t, ini: a, fim: b, f: f, esperado: m.m1 * f, devido: Math.floor(m.m1 * f + 1e-9), restante: Math.max(0, (b - now) / 1000) };
   r.noTurno = trabalha && now >= a && now < b;
@@ -1061,9 +1063,11 @@ function metaDiaRitmo(todos){
   var mes = 0, hoje = 0;
   todos.forEach(function(p){ mes += p.mes.qtd; hoje += p.hoje.qtd; });
   var d = new Date(), y = d.getFullYear(), m = d.getMonth(), dias = 0;
-  for (var day = d.getDate(); day <= 31; day++){ var x = new Date(y, m, day); if (x.getMonth() !== m) break; if (x.getDay() > 0) dias++; }
+  // em feriado o dia de hoje não conta: as vendas de hoje já entram como feitas e o ritmo vale para os próximos dias
+  var feitas = ehFeriado(d) ? mes : mes - hoje;
+  for (var day = d.getDate(); day <= 31; day++){ var x = new Date(y, m, day); if (x.getMonth() !== m) break; if (x.getDay() > 0 && !ehFeriado(x)) dias++; }
   if (!dias) return null;
-  return { qtd: Math.max(1, Math.ceil(Math.max(0, alvo - (mes - hoje)) / dias)) };
+  return { qtd: Math.max(1, Math.ceil(Math.max(0, alvo - feitas) / dias)) };
 }
 function viewRanking(campo){
   var v = $("v-" + campo); v.textContent = "";
