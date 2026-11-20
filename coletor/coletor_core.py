@@ -143,7 +143,10 @@ def coletar_govoice(gv, ops_csv):
     cdr = gv.get('/api/cdr/report', window='today')['window']['metrics']
     campanhas = gv.get('/api/campaigns')
     membros = gv.get('/api/queues/members')
-    filas = [q['name'] for q in gv.get('/api/queues')]
+    filas_api = gv.get('/api/queues')
+    filas = [q['name'] for q in filas_api]
+    # o GoVoice novo dá à fila um código ("tenant:uuid"); o nome legível vem em 'label' (20/11/2026)
+    rotulo = {q['name']: (q.get('label') or q['name']).strip() for q in filas_api}
     listas = gv.get('/api/qualification-lists')
 
     grupo_csv = {norm(l['tabulacao']): l['grupo'].strip() for l in ler_csv('tabulacoes.csv')}
@@ -169,8 +172,8 @@ def coletar_govoice(gv, ops_csv):
             'govoice': o.get('nome_govoice') or a['name'],
             'idEvo': int(o['id_evo']) if (o.get('id_evo') or '').strip() else None,
             'evo': o.get('nome_evo', ''),
-            'equipes': a.get('teams') or [],
-            'equipe': ' · '.join(a.get('teams') or []),
+            'equipes': [rotulo.get(x, x) for x in a.get('teams') or []],
+            'equipe': ' · '.join(rotulo.get(x, x) for x in a.get('teams') or []),
             'status': status_tv(a.get('status')),
             'statusGoVoice': a.get('status'),
             'statusDesde': a.get('status_since'),
@@ -185,7 +188,8 @@ def coletar_govoice(gv, ops_csv):
     for f in filas:
         ramais = sorted({so_ramal(m['interface']) for m in membros if m['queue_name'] == f} & ramais_tv)
         equipes.append({
-            'nome': f,
+            'nome': rotulo.get(f, f),
+            'fila': f,
             'campanhas': [{'nome': c['name'], 'status': c['status']} for c in campanhas if c.get('queue_name') == f and not c.get('deleted_at')],
             'membros': ramais,
             'tab': contagem(gv.get('/api/qualifications/report', window='today', queue=f)),

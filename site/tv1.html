@@ -52,6 +52,11 @@
   .eq-linha .at b { color: var(--texto); }
   .eq-barra { display: flex; flex-direction: column; gap: 8px; height: 100%; justify-content: center; }
   .eq-barra .pilha { height: 56px; font-size: 26px; }
+  .top-tabs { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 22px; font-weight: 600; color: var(--texto-2); }
+  .top-tabs span { white-space: nowrap; }
+  .top-tabs i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; margin-right: 8px; vertical-align: -1px; }
+  .top-tabs b { color: var(--texto); margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .eq-linha .pausada-tag { font-size: 18px; font-weight: 700; color: var(--amarelo); margin-left: 10px; }
 
   /* Tela de uma equipe */
   .cab-equipe { display: flex; align-items: center; gap: 28px; flex: none; }
@@ -162,6 +167,29 @@ function legenda() {
     return '<span><b style="background:' + g.cor + ';color:' + (g.id === 'neg' || g.id === 'imp' ? '#fff' : '#0b0a09') + '">' + g.icone + '</b>' + esc(g.nome) + '</span>';
   }).join('') + '</div>';
 }
+// 20/11/2026: na TV aparece só o nome da campanha (o nome da fila/mailing ficava feio).
+// Campanhas ativas primeiro; se nenhuma estiver ativa, mostra as pausadas. Sem campanha: nome da fila.
+function campanhasDe(eq) {
+  var l = (eq.campanhas || []).map(function (c) { return typeof c === 'string' ? { nome: c, status: 'ACTIVE' } : c; });
+  var at = l.filter(function (c) { return !c.status || c.status === 'ACTIVE'; });
+  return { lista: at.length ? at : l, pausada: !at.length && l.length > 0 };
+}
+function tituloEq(eq) {
+  var c = campanhasDe(eq);
+  return c.lista.length ? c.lista.map(function (x) { return String(x.nome).replace(/\s+/g, ' ').trim(); }).join(' · ') : eq.nome;
+}
+function tituloEqHtml(eq) { return esc(tituloEq(eq)) + (campanhasDe(eq).pausada ? '<span class="pausada-tag">pausada</span>' : ''); }
+// filas sem campanha e sem tabulação hoje não aparecem
+function equipesTV() { return D().equipes.filter(function (eq) { return (eq.campanhas || []).length || soma(tabEquipe(eq)) > 0; }); }
+// as tabulações que mais saíram (nome + quantidade)
+function topTabs(tabs, n) {
+  var l = Object.keys(tabs || {}).filter(function (k) { return tabs[k] > 0; }).sort(function (a, b) { return tabs[b] - tabs[a]; }).slice(0, n);
+  if (!l.length) return '';
+  return '<div class="top-tabs">' + l.map(function (k) {
+    var g = D().grupos.find(function (x) { return x.id === grupoDe(k); });
+    return '<span><i style="background:' + (g ? g.cor : 'var(--texto-3)') + '"></i>' + esc(k) + '<b>' + tabs[k] + '</b></span>';
+  }).join('') + '</div>';
+}
 function campanhas(eq) {
   if (!eq.campanhas.length) return '<div class="campanhas"><span class="campanha sem">sem campanha</span></div>';
   return '<div class="campanhas">' + eq.campanhas.map(function (c) {
@@ -213,13 +241,13 @@ function telaGeral() {
 }
 
 function telaTabEquipes() {
-  function linha(titulo, sub, tabs, nOps, classe) {
-    return '<div class="eq-linha ' + (classe || '') + '"><div><h3>' + esc(titulo) + '</h3><div class="at"><b>' + soma(tabs) + '</b> tabuladas · ' + nOps + ' operadores</div>' + sub + '</div>' +
-      '<div class="eq-barra">' + pilha(porGrupo(tabs), true) + '</div></div>';
+  function linha(tituloHtml, tabs, nOps, classe) {
+    return '<div class="eq-linha ' + (classe || '') + '"><div><h3>' + tituloHtml + '</h3><div class="at"><b>' + soma(tabs) + '</b> tabuladas · ' + nOps + ' operadores</div></div>' +
+      '<div class="eq-barra">' + pilha(porGrupo(tabs), true) + topTabs(tabs, 5) + '</div></div>';
   }
-  return '<div class="titulo-tela"><h2>Tabulações de hoje por equipe</h2>' + legenda() + '</div>' +
-    '<div class="equipes">' + linha('Todas as equipes', '', tabTodas(), D().operadores.length, 'total') +
-    D().equipes.map(function (eq) { return linha(eq.nome, campanhas(eq), tabEquipe(eq), membrosDe(eq).length); }).join('') + '</div>';
+  return '<div class="titulo-tela"><h2>Tabulações de hoje por campanha</h2>' + legenda() + '</div>' +
+    '<div class="equipes">' + linha('Todas as campanhas', tabTodas(), D().operadores.length, 'total') +
+    equipesTV().map(function (eq) { return linha(tituloEqHtml(eq), tabEquipe(eq), membrosDe(eq).length); }).join('') + '</div>';
 }
 
 function telaEquipe(eq) {
@@ -235,7 +263,7 @@ function telaEquipe(eq) {
   var vend = 0, g = porGrupo(tabsEq), tot = soma(tabsEq);
   ops.forEach(function (o) { vend += o.vendasHoje.qtd; });
 
-  var cab = '<div class="cab-equipe"><h2>' + esc(eq.nome) + '</h2>' + campanhas(eq) +
+  var cab = '<div class="cab-equipe"><h2>' + tituloEqHtml(eq) + '</h2>' +
     '<div class="resumo"><div><b>' + tot + '</b><span>Tabuladas</span></div><div><b style="color:var(--livre)">' + (tot ? Math.round(g.pos / tot * 100) : 0) + '%</b><span>Positivas</span></div><div><b style="color:var(--amarelo)">' + vend + '</b><span>Vendas hoje</span></div></div></div>';
   if (!ops.length) return cab + '<div class="vazio">Sem operadores logados nem ligações nesta equipe hoje</div>';
 
@@ -256,7 +284,7 @@ function telaEquipe(eq) {
 
 // monta as caixas das telas uma vez; o conteúdo é atualizado a cada segundo
 function montarTelas() {
-  var nomes = ['Operadores agora', 'Tabulações por equipe'].concat(D().equipes.map(function (e) { return e.nome; }));
+  var nomes = ['Operadores agora', 'Tabulações por equipe'].concat(equipesTV().map(function (e) { return e.nome; }));
   var t = document.getElementById('telas');
   var atual = Array.prototype.map.call(t.children, function (c) { return c.dataset.nome; }).join('|');
   if (atual !== nomes.join('|')) {
@@ -268,7 +296,7 @@ function renderTelas() {
   var telas = document.querySelectorAll('.tela');
   telas[0].innerHTML = telaGeral();
   telas[1].innerHTML = telaTabEquipes();
-  D().equipes.forEach(function (eq, i) { telas[i + 2].innerHTML = telaEquipe(eq); });
+  equipesTV().forEach(function (eq, i) { telas[i + 2].innerHTML = telaEquipe(eq); });
 }
 function render() { renderNumeros(); renderTelas(); }
 
