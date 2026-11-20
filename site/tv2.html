@@ -722,6 +722,7 @@ var CONFIG = {
   metas: { m1: 3, m2: 5, m3: 7, sm: 10 },                    // vendas por pessoa por dia (M1 é a meta mínima e define o ritmo)
   turno: { inicio: "08:00", horas: 6, dias: [1, 2, 3, 4, 5, 6] },   // padrão: 6h por dia, segunda a sábado (0 = domingo)
   turnoIA: { inicio: "00:00", fim: "23:59", dias: [0, 1, 2, 3, 4, 5, 6] },
+  metaMes: { qtd: 300 },        // meta do mês da equipe (planos)
   docEquipe: "config/equipe",  // metas e horários salvos pelo painel (link do Claude)
   minutosSemAtualizacao: 20,   // online os dados chegam a cada ~5 min
   pausaLongaMin: 15,
@@ -866,8 +867,13 @@ function turnoPadrao(p){
   var t = p.ia ? CONFIG.turnoIA : CONFIG.turno, ini = hm(t.inicio);
   return { inicio: t.inicio, fim: t.fim || fmtHM(ini + (t.horas || 6) * 60), dias: (t.dias || [1, 2, 3, 4, 5, 6]).slice() };
 }
+
+var HORARIOS_FIXOS = {
+  alana: { inicio: "08:00", fim: "14:15" }, renato: { inicio: "08:00", fim: "14:15" }, leticia: { inicio: "08:00", fim: "14:15" },
+  felipe: { inicio: "14:15", fim: "20:30" }, marcus: { inicio: "14:15", fim: "20:30" }, natalia: { inicio: "14:15", fim: "20:30" }
+};
 function turnoDe(p){
-  var b = turnoPadrao(p), c = (EQ.horarios && EQ.horarios[chaveDe(p)]) || p.turno;
+  var b = turnoPadrao(p), c = (EQ.horarios && EQ.horarios[chaveDe(p)]) || HORARIOS_FIXOS[chaveDe(p)] || p.turno;
   if (!c) return b;
   return { inicio: hm(c.inicio) != null ? c.inicio : b.inicio, fim: hm(c.fim) != null ? c.fim : b.fim, dias: Array.isArray(c.dias) ? c.dias : b.dias };
 }
@@ -1040,7 +1046,7 @@ function viewRanking(campo){
     kpi("", "Ticket médio", tot.q ? brl(tot.v / tot.q) : "—", "por venda"),
     isHoje ? kpi("b", "Conversão hoje", atendidas ? (Math.round(humanos.reduce(function(s, p){ return s + p.qtd; }, 0) / atendidas * 1000) / 10).toLocaleString("pt-BR") + "%" : "—", "vendas ÷ ligações atendidas")
            : kpi("b", "Vendendo", vendendo + " de " + humanos.length, "com 1 venda ou mais"),
-    metaKpi(isHoje ? D.metaDia : D.metaMes, tot.q, tot.v, isHoje ? "Meta do dia" : "Meta do mês")));
+    metaKpi(isHoje ? D.metaDia : (D.metaMes || CONFIG.metaMes), tot.q, tot.v, isHoje ? "Meta do dia" : "Meta do mês")));
 
   // pódio
   var stage = h("section", { class: "stage", "aria-label": "Pódio" }, h("span", { class: "stage-label" }, "Pódio"));
