@@ -517,6 +517,18 @@ def coletar(cred_evo, cred_gv, guarda):
         print('histórico de vendas indisponível:', type(e).__name__, str(e)[:200])
         hist, hist_faltam = (guarda.ler('vendas_hist') or {}).get('vendas', []), None
     aj = ajustes()  # vale também para as vendas que já estavam no cache
+    # venda do ajuste que ficou fora do cache (ex.: vendedor corrigido no EVO depois que o dia já tinha fechado):
+    # busca direto no EVO e inclui (24/11/2026, venda 635690 do Matheus lançada em 22/11 e corrigida em 24/11)
+    conhecidas = {v['id'] for v in dia + mes + hist}
+    for idv in aj:
+        if idv in conhecidas:
+            continue
+        try:
+            s = get(f'/api/v2/sales/{idv}?showReceivables=true')
+            if not (s.get('removed') or s.get('removalDate')):
+                mes += resumir([s], ids)
+        except Exception as e:
+            print('venda do ajuste', idv, 'sem resposta do EVO:', type(e).__name__, str(e)[:120])
     gn = ganhas()
     for v in dia + mes + hist:
         v['idEmployee'] = aj.get(v['id'], v['idEmployee'])
