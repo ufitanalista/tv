@@ -85,6 +85,9 @@ def montar_site(k):
         gravar(os.path.join(site, nome), h)
 
     h = ler(os.path.join(orig, 'balcao.html'))
+    # o layout do Balcão usa a classe .app (display: grid), a mesma do <script class="app"> da versão online:
+    # sem esta regra o código da página aparece como texto no fim da tela
+    h = trocar(h, '.app { display: grid;', 'script.app { display: none; }\n.app { display: grid;', 'balcao.html')
     m = re.search(r'\n<script>\nconst DADOS = (\{.*?\});\n', h)
     if not m:
         sys.exit('ERRO: não achei os dados do Balcão (const DADOS) no balcao.html')
